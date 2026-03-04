@@ -87,7 +87,7 @@ cen.add_shroud(shroud2[:,0],shroud2[:,1])
 
 TE_Cut = True
 te_props = TrailingEdgeProperties(TE_Cut=TE_Cut,TE_Radius=0.05,TE_cut_strength=20)
-hub = CentrifProfile(percent_span=0,LE_Thickness=0.005,
+hub = CentrifProfile(percent_span=0,LE_Thickness=0.05,
                               trailing_edge_properties=te_props,
                               LE_Metal_Angle=-50,
                               TE_Metal_Angle=-30,
@@ -102,7 +102,7 @@ hub = CentrifProfile(percent_span=0,LE_Thickness=0.005,
 
 te_props = TrailingEdgeProperties(TE_Cut=TE_Cut,TE_Radius=0.02)
 
-mid = CentrifProfile(percent_span=0.5,LE_Thickness=0.005,
+mid = CentrifProfile(percent_span=0.5,LE_Thickness=0.05,
                               trailing_edge_properties=te_props,
                               LE_Metal_Angle=-50,
                               TE_Metal_Angle=-30,
@@ -115,7 +115,7 @@ mid = CentrifProfile(percent_span=0.5,LE_Thickness=0.005,
                               wrap_displacement_locs=[0.3,0.4,0.5,0.7],
                               camber_follow_density=10)
 
-tip = CentrifProfile(percent_span=1,LE_Thickness=0.005,
+tip = CentrifProfile(percent_span=1,LE_Thickness=0.05,
                               trailing_edge_properties=te_props,
                               LE_Metal_Angle=-50,
                               TE_Metal_Angle=-30,
@@ -131,12 +131,12 @@ tip = CentrifProfile(percent_span=1,LE_Thickness=0.005,
 cen.add_profile(hub)
 cen.add_profile(mid)
 cen.add_profile(tip)
-cen.add_splitter([hub,mid,tip],splitter_start=0.55)
+# cen.add_splitter([hub,mid,tip],splitter_start=0.55)
 
 cen.build(npts_span=10, npts_chord=100,nblades=nblades)
 # s_c_b2b,_ = cen.pitch_to_chord()
 # cen.plot_camber()
-# cen.plot_mp_profile()
+cen.plot_mp_profile()
 # cen.plot()
 cen.plot_fullwheel()
 print('check')

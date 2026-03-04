@@ -65,7 +65,7 @@ class CentrifProfile:
     trailing_edge_properties:TrailingEdgeProperties
     thickness_start:float=0.01
     thickness_end:float=0.95
-    camber_follow_density:int = 0           # 0: use sparse control points. N>0: densify with N intermediate points for better camber following
+    camber_follow_density:int = 20           # 0: use sparse control points. N>0: densify with N intermediate points for better camber following
     
 @dataclass
 class CentrifProfileDebug:
@@ -1147,87 +1147,86 @@ class Centrif:
         plt.show()
         
     def plot_mp_profile(self,nblades:int=1,total_blades:int=1):
-        """Plot the control profiles in the rx-theta plane
-        
+        """Plot blade profiles.
+
+        Produces two figures:
+            1. x-r passage view: hub/shroud endwalls with all profile x-r lines
+            2. mp-theta subplots (1x3): hub, mid, tip each showing blade + splitter
+
         Args:
-            nblades (int, optional): number of blades. Defaults to 1.
+            nblades (int, optional): number of blades for blade-to-blade view. Defaults to 1.
             total_blades (int, optional): total blades, used to calculate dtheta. Defaults to 1.
         """
-        def plot_data(profiles_debug:CentrifProfileDebug,prefix:str):
-            dtheta = np.radians(360/total_blades)
-            for i in range(len(profiles_debug)):
-                theta = 0; p = profiles_debug[i]
-                plt.figure(num=i*4,clear=True)          # mp view
-                for _ in range(nblades):
-                    plt.plot(p.camber_mp_th[:,0],p.camber_mp_th[:,3]+theta, color='black', linestyle='dashed',linewidth=2,label='camber')
-                    plt.plot(p.SS[:,0],p.SS[:,1],'ro',markerfacecolor='none', label='suction ctrl')
-                    plt.plot(p.PS[:,0],p.PS[:,1],'bo',markerfacecolor='none',label='pressure ctrl')
-                    plt.plot(p.ss_mp_pts[:,0],p.ss_mp_pts[:,1]+theta,'r-',label='ss')
-                    plt.plot(p.ps_mp_pts[:,0],p.ps_mp_pts[:,1]+theta,'b-',label='ps')
-                    if p.ss_follow_pts is not None:
-                        plt.plot(p.ss_follow_pts[:,0],p.ss_follow_pts[:,1]+theta,'ro',markerfacecolor='none',label='ss follow')
-                    if p.ps_follow_pts is not None:
-                        plt.plot(p.ps_follow_pts[:,0],p.ps_follow_pts[:,1]+theta,'bo',markerfacecolor='none',label='ps follow')
-                    theta += dtheta
-                plt.legend()
-                plt.xlabel('mprime')
-                plt.ylabel('theta')
-                plt.title(f'mprime profile-{i}')
-                plt.axis('equal')
-                plt.savefig(f'{prefix} mp-theta {i:02d}.png',dpi=150)
-                
-            # for i in range(len(profiles_debug)):
-            #     theta = 0; p = profiles_debug[i]
-            #     plt.figure(num=i*4+1,clear=True)        # x-theta view
-            #     for n in range(nblades):
-            #         xrth = self.get_camber_points(i,self.t_hub,self.t_camber)
-            #         plt.plot(xrth[:,0],xrth[:,2]+theta, color='black', linestyle='dashed',linewidth=2,label='camber')
-            #         plt.plot(p.ss_mp_pts[:,3],p.ss_mp_pts[:,1]+theta,'r-',label='ss')
-            #         plt.plot(p.ps_mp_pts[:,3],p.ps_mp_pts[:,1]+theta,'b-',label='ps')
-            #         theta += dtheta
-            #     plt.legend()
-            #     plt.xlabel('X')
-            #     plt.ylabel('Theta')
-            #     plt.title(f'X-Theta Profile-{i}')
-            #     plt.axis('equal')
-            #     plt.savefig(f'{prefix} x-theta {i:02d}.png',dpi=150)
-                
-            # for i in range(len(profiles_debug)):
-            #     theta = 0; p = profiles_debug[i]
-            #     plt.figure(num=i*4+2,clear=True)        # theta-r view
-            #     for n in range(nblades):
-            #         xrth = self.get_camber_points(i,self.t_hub,self.t_camber)
-            #         plt.plot(np.degrees(xrth[:,2]),xrth[:,1]+theta, color='black', linestyle='dashed',linewidth=2,label='camber')
-            #         plt.plot(np.degrees(p.ss_mp_pts[:,1]),p.ss_mp_pts[:,2]+theta,'r-',label='ss')
-            #         plt.plot(np.degrees(p.ps_mp_pts[:,1]),p.ps_mp_pts[:,2]+theta,'b-',label='ps')
-            #         theta += dtheta
-            #     plt.legend()
-            #     plt.xlabel('Theta')
-            #     plt.ylabel('R')
-            #     plt.axis('equal')
-            #     plt.title(f'Theta-r Profile-{i}')
-            #     plt.savefig(f'{prefix} theta-r {i:02d}.png',dpi=150)
-            
-            for i in range(len(profiles_debug)):
-                p = profiles_debug[i]
-                plt.figure(num=i*4+3,clear=True)        # x-r view
-                xrth = self.get_camber_points(i,self.t_hub,self.t_camber)
-                plt.plot(xrth[:,0],xrth[:,1]+theta, color='black', linestyle='dashed',linewidth=2,label='camber')
-                plt.plot(p.ss_mp_pts[:,3],p.ss_mp_pts[:,2]+theta,'r-',label='ss')
-                plt.plot(p.ps_mp_pts[:,3],p.ps_mp_pts[:,2]+theta,'b-',label='ps')
-                plt.plot(self.hub_pts_cyl[0,:,0],self.hub_pts_cyl[0,:,1]+theta,'k',label='hub',alpha=0.2)
-                plt.plot(self.shroud_pts_cyl[0,:,0],self.shroud_pts_cyl[0,:,1]+theta,'k',label='shroud',alpha=0.2)
-                
-                plt.legend()
-                plt.xlabel('x')
-                plt.ylabel('r')
-                plt.title(f'x-r Profile-{i}')
-                plt.axis('equal')
-                plt.savefig(f'{prefix} x-r {i:02d}.png',dpi=150)
-                
-        plot_data(self.profiles_debug,'profile')
+        dtheta = np.radians(360/total_blades)
+        nprofiles = len(self.profiles_debug)
+        span_labels = {0: 'Hub', 1: 'Mid', 2: 'Tip'}
+        profile_colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:purple', 'tab:brown']
+
+        # --- Figure 1: x-r passage view ---
+        plt.figure(num=10, clear=True, dpi=150)
+        plt.plot(self.hub_pts_cyl[0,:,0], self.hub_pts_cyl[0,:,1], 'k', label='hub', linewidth=3, alpha=0.5)
+        plt.plot(self.shroud_pts_cyl[0,:,0], self.shroud_pts_cyl[0,:,1], 'k', label='shroud', linewidth=3, alpha=0.5)
+
+        for i, p in enumerate(self.profiles_debug):
+            c = profile_colors[i % len(profile_colors)]
+            lbl = span_labels.get(i, f'Profile {i}')
+            xrth = self.get_camber_points(i, self.t_hub, self.t_camber)
+            plt.plot(xrth[:,0], xrth[:,1], color=c, linestyle='dashed', linewidth=1.5, alpha=0.6, label=f'camber {lbl}')
+            plt.plot(p.ss_mp_pts[:,3], p.ss_mp_pts[:,2], color=c, linestyle='-', linewidth=1.5, alpha=0.8, label=f'ss {lbl}')
+            plt.plot(p.ps_mp_pts[:,3], p.ps_mp_pts[:,2], color=c, linestyle='--', linewidth=1.5, alpha=0.8, label=f'ps {lbl}')
+
         if self.splitter_debug is not None:
-            plot_data(self.splitter_debug,'splitter')
+            for i, p in enumerate(self.splitter_debug):
+                c = profile_colors[i % len(profile_colors)]
+                lbl = span_labels.get(i, f'Profile {i}')
+                plt.plot(p.ss_mp_pts[:,3], p.ss_mp_pts[:,2], color=c, linestyle='-', linewidth=1, alpha=0.5, label=f'splitter ss {lbl}')
+                plt.plot(p.ps_mp_pts[:,3], p.ps_mp_pts[:,2], color=c, linestyle='--', linewidth=1, alpha=0.5, label=f'splitter ps {lbl}')
+
+        plt.legend(fontsize='small', loc='best')
+        plt.xlabel('x')
+        plt.ylabel('r')
+        plt.title('x-r (passage)')
+        plt.axis('equal')
+        plt.savefig('x-r.png', dpi=150)
+
+        # --- Figure 2: mp-theta subplots (1 row x nprofiles columns) ---
+        fig, axes = plt.subplots(1, nprofiles, figsize=(6*nprofiles, 5), dpi=150, num=11, clear=True)
+        if nprofiles == 1:
+            axes = [axes]
+
+        for i, p in enumerate(self.profiles_debug):
+            ax = axes[i]
+            theta = 0
+            for n in range(nblades):
+                ax.plot(p.camber_mp_th[:,0], p.camber_mp_th[:,3]+theta, 'k--', linewidth=1, label='camber' if n == 0 else None)
+                ax.plot(p.SS[:,0], p.SS[:,1]+theta, 'ro', markerfacecolor='none', markersize=4, label='ss ctrl' if n == 0 else None)
+                ax.plot(p.PS[:,0], p.PS[:,1]+theta, 'bs', markerfacecolor='none', markersize=4, label='ps ctrl' if n == 0 else None)
+                ax.plot(p.ss_mp_pts[:,0], p.ss_mp_pts[:,1]+theta, 'r-', linewidth=1.5, label='ss' if n == 0 else None)
+                ax.plot(p.ps_mp_pts[:,0], p.ps_mp_pts[:,1]+theta, 'b-', linewidth=1.5, label='ps' if n == 0 else None)
+                if p.ss_follow_pts is not None and n == 0:
+                    ax.plot(p.ss_follow_pts[:,0], p.ss_follow_pts[:,1]+theta, 'ro', markerfacecolor='none', markersize=3)
+                if p.ps_follow_pts is not None and n == 0:
+                    ax.plot(p.ps_follow_pts[:,0], p.ps_follow_pts[:,1]+theta, 'bs', markerfacecolor='none', markersize=3)
+                theta += dtheta
+
+            # Splitter on same subplot — offset by half blade pitch, same as fullwheel
+            if self.splitter_debug is not None and i < len(self.splitter_debug):
+                sp = self.splitter_debug[i]
+                theta = dtheta / 2
+                for n in range(nblades):
+                    ax.plot(sp.camber_mp_th[:,0], sp.camber_mp_th[:,3]+theta, 'k:', linewidth=1, label='splitter camber' if n == 0 else None)
+                    ax.plot(sp.ss_mp_pts[:,0], sp.ss_mp_pts[:,1]+theta, 'r--', linewidth=1.5, label='splitter ss' if n == 0 else None)
+                    ax.plot(sp.ps_mp_pts[:,0], sp.ps_mp_pts[:,1]+theta, 'b--', linewidth=1.5, label='splitter ps' if n == 0 else None)
+                    theta += dtheta
+
+            ax.set_xlabel('mprime')
+            ax.set_ylabel('theta')
+            ax.set_title(f'{span_labels.get(i, f"Profile {i}")}')
+            ax.legend(fontsize='small', loc='best')
+
+        fig.tight_layout()
+        fig.savefig('mp-theta.png', dpi=150)
+        plt.show()
     
     def plot(self):
         """3D Cartesian Plot
