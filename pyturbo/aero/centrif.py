@@ -59,13 +59,14 @@ class CentrifProfile:
     ps_thickness:List[float]
 
     wrap_angle:float                        # angle of wrap/theta
-    wrap_displacements:List[float]          # percent of wrap_angle
-    wrap_displacement_locs:List[float]      # percent chord
-    
+
     trailing_edge_properties:TrailingEdgeProperties
+    wrap_displacements:List[float] = None   # percent of wrap_angle
+    wrap_displacement_locs:List[float] = None  # percent chord
     thickness_start:float=0.01
     thickness_end:float=0.95
     camber_follow_density:int = 20           # 0: use sparse control points. N>0: densify with N intermediate points for better camber following
+    use_ray_camber:bool = None               # None: use Centrif-level setting. True/False: override per profile
     
 @dataclass
 class CentrifProfileDebug:
@@ -478,7 +479,7 @@ class Centrif:
         dth = np.diff(xrth[:,2])
         return np.sum(np.sqrt(dr**2+xrth[:,1]**2 * dth**2 + dx**2))
  
-    def __build_camber__(self,profile:CentrifProfile,theta_wrap:float=None,use_ray_intersection:bool=False) -> Tuple[bezier,float]:
+    def __build_camber__(self,profile:CentrifProfile,theta_wrap:float |None = None,use_ray_intersection:bool=False) -> Tuple[bezier,float]:
         """Builds the camber for a profile
 
         Args:
@@ -496,7 +497,9 @@ class Centrif:
         xr = self.__get_rx_slice__(profile_loc,np.linspace(self.blade_position[0],self.blade_position[1],self.npts_chord))
         mp = xr_to_mprime(xr)[0]
         camb_len = mp[-1]
-        n_wrap_displacements = np.count_nonzero(profile.wrap_displacement_locs)
+        wrap_disps = profile.wrap_displacements or []
+        wrap_locs = profile.wrap_displacement_locs or []
+        n_wrap_displacements = np.count_nonzero(wrap_locs)
         camber_bezier_mp_th = np.zeros(shape=(4+n_wrap_displacements,2)) # Bezier Control points in the mp,theta plane
 
         # LE Metal Angle dth
@@ -519,7 +522,7 @@ class Centrif:
             camber_bezier_mp_th[-1,:] = [camb_len, dth_wrap]
             return bezier(camber_bezier_mp_th[:,0], camber_bezier_mp_th[:,1]),dth_wrap
         else:
-            camber_bezier_mp_th = np.zeros(shape=(4+len(profile.wrap_displacements),2)) # Bezier Control points in the t,theta plane
+            camber_bezier_mp_th = np.zeros(shape=(4+len(wrap_disps),2)) # Bezier Control points in the t,theta plane
             camber_bezier_mp_th[0,:] = [0, 0]
             camber_bezier_mp_th[1,:] = [profile.LE_Metal_Angle_Loc*camb_len, dth_LE]
             camber_bezier_mp_th[-2,:] = [profile.TE_Metal_Angle_Loc*camb_len, dth_TE]
@@ -534,7 +537,7 @@ class Centrif:
             # camb_len = np.sqrt(xr0[1]**2+xr1[1]**2 -2*xr0[1]*xr1[1]*np.cos(np.radians(profile.wrap_angle)) + (xr1[0]-xr0[0])**2)
             j = 2
             dl = profile.TE_Metal_Angle_Loc - profile.LE_Metal_Angle_Loc
-            for loc,displacement in zip(profile.wrap_displacement_locs, profile.wrap_displacements):
+            for loc,displacement in zip(wrap_locs, wrap_disps):
                 l = profile.LE_Metal_Angle_Loc + loc*dl
                 nx,ny = camber_bezier.get_point_dt(l)
                 x1,y1 = camber_bezier.get_point(l)
@@ -1028,13 +1031,16 @@ class Centrif:
         self.profiles_debug = list() 
         self.splitter_debug = list()
         
+        def _ray_flag(profile:CentrifProfile) -> bool:
+            return profile.use_ray_camber if profile.use_ray_camber is not None else self.use_ray_camber
+
         if self.use_mid_wrap_angle:
-            _,theta_wrap = self.__build_camber__(self.profiles[1],theta_wrap=None,use_ray_intersection=self.use_ray_camber) # use wrap angle from mid profile
+            _,theta_wrap = self.__build_camber__(self.profiles[1],theta_wrap=None,use_ray_intersection=_ray_flag(self.profiles[1])) # use wrap angle from mid profile
         else:
             theta_wrap = None
-            
+
         for i,profile in enumerate(self.profiles):
-            self.camber_mp_th.append(self.__build_camber__(profile,theta_wrap,use_ray_intersection=self.use_ray_camber)[0])
+            self.camber_mp_th.append(self.__build_camber__(profile,theta_wrap,use_ray_intersection=_ray_flag(profile))[0])
             self.apply_camber_shifts(self.le_theta_shifts,self.te_theta_shifts)
             self.profiles_debug.append(self.__apply_thickness__(profile,i,camber_start=0,npts_chord=npts_chord))  # Creates the flattened profiles
         if self.splitter_start != 0 and len(self.splitter_profiles)>0:
@@ -1075,51 +1081,23 @@ class Centrif:
             self.blades[i].build(self.blades[i].npts_span,self.blades[i].npts_chord)
             self.blades[i].rotate(self.blades[i].rotation_angle+pattern.rotation_ajustment) # Rotate the blade 
             
-    def plot_camber(self,plot_hub_shroud:bool=True):
-        """Plot the camber line
+    def plot_camber(self):
+        """Plot the camber lines (mp-theta) for all profiles on a single figure.
         """
-        
+        span_labels = {0: 'Hub', 1: 'Mid', 2: 'Tip'}
         t = self.t_camber
-        for i,b in enumerate(self.camber_mp_th):
-            fig = plt.figure(num=1,dpi=150,clear=True)
-            [x,y] = b.get_point(t)        
-            plt.plot(x, y,'-b',label=f"curve {i}")
-            plt.plot(b.x, b.y,'or',label=f"curve {i}")
-            plt.xlabel('mprime')
-            plt.ylabel('theta')
-            plt.title(f'Profile {i}')
-            plt.axis('equal')
-            plt.savefig(f'profile camber {i:2d}')
-
-        fig = plt.figure(num=2,dpi=150,clear=True)
-        ax = fig.add_subplot(111, projection='3d')
-        # Plots the camber and control points 
-        k = 0
-        for camber,profile in zip(self.camber_mp_th,self.profiles):
-            xc = np.zeros(shape=(len(camber.x),1))      # Bezier control points x,r,th
-            rc = np.zeros(shape=(len(camber.x),1))
-            thc = np.zeros(shape=(len(camber.x),1))     # theta control points
-            mpc = np.zeros(shape=(len(camber.x),1))     # mprime control points
-            
-            for i in range(len(camber.x)):              # Camber x is really mprime
-                t = camber.x[i]/camber.x[-1]            # Percent along mprime
-                xc[i],rc[i] = self.__get_camber_xr_point__(profile.percent_span,t)
-                mpc[i],thc[i] = camber.get_point(t)
-            
-            ax.plot3D(xc[1:-1],thc[1:-1],rc[1:-1],'or',markersize=4)
-            ax.plot3D(xc[0],thc[0],rc[0],'ok',markersize=4)
-            ax.plot3D(xc[-1],thc[-1],rc[-1],'ok',markersize=4)
-            
-            xrth = self.get_camber_points(k,self.t_hub,self.t_camber)
-            ax.plot3D(xrth[:,0],xrth[:,2],xrth[:,1],'-b',linewidth=2)   # x, theta, r
-            k+=1
-        # Plots the hub and shroud 
-        if plot_hub_shroud:
-            ax.plot3D(self.hub_pts_cyl[0,:,0],self.hub_pts_cyl[0,:,2],self.hub_pts_cyl[0,:,1],'k',linewidth=2.5)
-            ax.plot3D(self.shroud_pts_cyl[0,:,0],self.shroud_pts_cyl[0,:,2],self.shroud_pts_cyl[0,:,1],'k',linewidth=2.5)
-        ax.view_init(68,-174)
-        plt.axis('equal')
-        # plt.show()
+        plt.figure(num=1, dpi=150, clear=True)
+        for i, b in enumerate(self.camber_mp_th):
+            [x, y] = b.get_point(t)
+            lbl = span_labels.get(i, f'Profile {i}')
+            plt.plot(x, y, '-', linewidth=1.5, label=f'camber {lbl}')
+            plt.plot(b.x, b.y, 'o', markerfacecolor='none', markersize=4, label=f'ctrl pts {lbl}')
+        plt.xlabel('mprime')
+        plt.ylabel('theta')
+        plt.title('Camber Lines')
+        plt.legend(fontsize='small', loc='best')
+        plt.savefig('camber.png', dpi=150)
+        plt.show()
     
     def plot_profile_debug_3D(self,nblades:int=1,total_blades:int=1):
         fig = plt.figure(num=2,clear=True,dpi=150)
