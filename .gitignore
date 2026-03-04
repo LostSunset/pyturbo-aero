@@ -196,3 +196,12 @@ solidwork_curves.txt/
 profile*.png
 splitter*.png
 *.lock
+rturbine_mp.csv
+rturbine_xrth.csv
+rturbine_xyz_pts.csv
+centrif_compressor_mainblade_mp.csv
+centrif_compressor_mainblade_xrth.csv
+centrif_compressor_mainblade_xyz_pts.csv
+centrif_compressor_splitter_mp.csv
+centrif_compressor_splitter_xrth.csv
+centrif_compressor_splitter_xyz_pts.csv

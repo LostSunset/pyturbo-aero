@@ -78,8 +78,10 @@ class bezier:
             Tuple: containing x and y points
         """
         scalar_input = np.isscalar(t) and not isinstance(t, (list, np.ndarray))
+        if not scalar_input and isinstance(t, list) and len(t) == 1:
+            scalar_input = True
         t = convert_to_ndarray(t)
-        x = t*0; y = t*0  
+        x = t*0; y = t*0
         for i in range(self.n):
             x += bernstein_poly(self.n-1,i,t)*self.x[i]
             y += bernstein_poly(self.n-1,i,t)*self.y[i]
@@ -104,8 +106,10 @@ class bezier:
                 **dy** (npt.NDArray): Derivative of y as a function of t 
         """
         scalar_input = np.isscalar(t) and not isinstance(t, (list, np.ndarray))
+        if not scalar_input and isinstance(t, list) and len(t) == 1:
+            scalar_input = True
         t = convert_to_ndarray(t)
-        
+
         dx = t*0; dy = t*0
         for i in range(self.n-1):
             dx += bernstein_poly(self.n-2,i,t)*(self.x[i+1]-self.x[i])
@@ -118,6 +122,8 @@ class bezier:
 
     def get_point_dt2(self,t:Union[float,npt.NDArray]):
         scalar_input = np.isscalar(t) and not isinstance(t, (list, np.ndarray))
+        if not scalar_input and isinstance(t, list) and len(t) == 1:
+            scalar_input = True
         t = convert_to_ndarray(t)
         dx2 = t*0; dy2 = t*0
         for i in range(self.n-2):
