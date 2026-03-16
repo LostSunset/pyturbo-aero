@@ -360,7 +360,21 @@ class Airfoil3D:
             self.shft_ss[i,:,0] += x
             self.shft_ps[i,:,1] += y
             self.shft_ps[i,:,0] += x
-    
+
+        self.control_ss[:,:,0] += x
+        self.control_ss[:,:,1] += y
+        self.control_ps[:,:,0] += x
+        self.control_ps[:,:,1] += y
+
+        self.stack_bezier_ctrl_pts[:,0] += x
+        self.stack_bezier_ctrl_pts[:,1] += y
+        self.stack_bezier.x = self.stack_bezier.x + x
+        self.stack_bezier.y = self.stack_bezier.y + y
+
+        if self.te_center is not None:
+            self.te_center[:,0] += x
+            self.te_center[:,1] += y
+
     def flip_le_te(self):
         """
         Flip a stack of airfoils (suction and pressure sides) about their centroids,
@@ -384,15 +398,14 @@ class Airfoil3D:
 
             # Original leading and trailing edge
             leading_edge = ss[0]
-            trailing_edge = ss[-1]
 
             # Centroid of entire airfoil section
             n_total = len(ss) + len(ps)
-            centroid = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
+            cent = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
 
             # Reflect both sides through the centroid
-            flipped_ss_i = 2 * centroid - ss
-            flipped_ps_i = 2 * centroid - ps
+            flipped_ss_i = 2 * cent - ss
+            flipped_ps_i = 2 * cent - ps
 
             # Translate so flipped trailing edge lands on original leading edge
             flipped_trailing = flipped_ss_i[-1]
@@ -400,23 +413,67 @@ class Airfoil3D:
 
             flipped_ss[i] = flipped_ss_i + translation
             flipped_ps[i] = flipped_ps_i + translation
-        
+
         self.shft_ps = flipped_ps
         self.shft_ss = flipped_ss
+
+        # Flip control profiles the same way
+        M_ctrl = self.control_ss.shape[0]
+        flipped_ctrl_ss = np.empty_like(self.control_ss)
+        flipped_ctrl_ps = np.empty_like(self.control_ps)
+        for i in range(M_ctrl):
+            css = self.control_ss[i]
+            cps = self.control_ps[i]
+            leading_edge = css[0]
+            n_total = len(css) + len(cps)
+            cent = (np.sum(css, axis=0) + np.sum(cps, axis=0)) / n_total
+            flipped_css = 2 * cent - css
+            flipped_cps = 2 * cent - cps
+            flipped_trailing = flipped_css[-1]
+            translation = leading_edge - flipped_trailing
+            flipped_ctrl_ss[i] = flipped_css + translation
+            flipped_ctrl_ps[i] = flipped_cps + translation
+        self.control_ss = flipped_ctrl_ss
+        self.control_ps = flipped_ctrl_ps
+
+        # Flip spine control points: reflect about their mean, then translate
+        spine_cent = np.mean(self.stack_bezier_ctrl_pts, axis=0)
+        self.stack_bezier_ctrl_pts = 2 * spine_cent - self.stack_bezier_ctrl_pts
+        self.stack_bezier.x = 2 * np.mean(self.stack_bezier.x) - self.stack_bezier.x
+        self.stack_bezier.y = 2 * np.mean(self.stack_bezier.y) - self.stack_bezier.y
+
+        # Flip trailing edge centers
+        if self.te_center is not None:
+            for i in range(M):
+                ss = flipped_ss[i]
+                ps = flipped_ps[i]
+                n_total = len(ss) + len(ps)
+                cent = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
+                self.te_center[i] = 2 * cent - self.te_center[i]
 
     def flip_x(self):
         """Mirrors the blade by multiplying -1*x direction. This is assuming axial chord is in the y direction and span is in z
         """
         self.shft_ps[:,:,0] *= -1
         self.shft_ss[:,:,0] *= -1
-        self.control_ps[:,:,0] *= -1 
-        self.control_ss[:,:,0] *= -1 
+        self.control_ps[:,:,0] *= -1
+        self.control_ss[:,:,0] *= -1
+        self.stack_bezier_ctrl_pts[:,0] *= -1
+        self.stack_bezier.x = -self.stack_bezier.x
+        if self.te_center is not None:
+            self.te_center[:,0] *= -1
 
     def flip_y(self):
         """Mirrors the blade by multiplying y direction by -1. This is assuming axial chord is in the y direction and span is in z
         """
         self.shft_ps[:,:,1] = -1*self.shft_ps[:,:,1]
         self.shft_ss[:,:,1] = -1*self.shft_ss[:,:,1]
+        self.control_ps[:,:,1] *= -1
+        self.control_ss[:,:,1] *= -1
+        self.stack_bezier_ctrl_pts[:,1] *= -1
+        self.stack_bezier.y = -self.stack_bezier.y
+        if self.te_center is not None:
+            self.te_center[:,1] *= -1
 
     def section_z(self,zStartPercent:float,zEndPercent:float):
         """Chops the blade in between 2 spanwise lines. Think of it as cutting the blade between (zStartPercent) 10% and (zEndPercent) 50%
@@ -1036,7 +1093,23 @@ class Airfoil3D:
             self.control_ps[i,:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
             self.control_ps[i,:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
+        # Rotate stacking spine control points
+        dx = self.stack_bezier_ctrl_pts[:,0] - cx
+        dy = self.stack_bezier_ctrl_pts[:,1] - cy
+        self.stack_bezier_ctrl_pts[:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
+        self.stack_bezier_ctrl_pts[:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
+        dx = self.stack_bezier.x - cx
+        dy = self.stack_bezier.y - cy
+        self.stack_bezier.x = (dx*cosd(angle) - dy*sind(angle)) + cx
+        self.stack_bezier.y = (dx*sind(angle) + dy*cosd(angle)) + cy
+
+        # Rotate trailing edge centers
+        if self.te_center is not None:
+            dx = self.te_center[:,0] - cx
+            dy = self.te_center[:,1] - cy
+            self.te_center[:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
+            self.te_center[:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
     def center_le(self):
         """centers the blade by placing leading edge at 0,0
@@ -1051,6 +1124,7 @@ class Airfoil3D:
         self.control_ps -= np.array([xc, yc, zc])
         self.control_ss -= np.array([xc, yc, zc])
         
+        self.stack_bezier_ctrl_pts -= np.array([xc, yc, zc])
         self.stack_bezier.x = self.stack_bezier.x - xc
         self.stack_bezier.y = self.stack_bezier.y - yc
         self.stack_bezier.z = self.stack_bezier.z - zc
