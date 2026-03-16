@@ -522,31 +522,35 @@ class Centrif:
             camber_bezier_mp_th[-1,:] = [camb_len, dth_wrap]
             return bezier(camber_bezier_mp_th[:,0], camber_bezier_mp_th[:,1]),dth_wrap
         else:
-            camber_bezier_mp_th = np.zeros(shape=(4+len(wrap_disps),2)) # Bezier Control points in the t,theta plane
-            camber_bezier_mp_th[0,:] = [0, 0]
-            camber_bezier_mp_th[1,:] = [profile.LE_Metal_Angle_Loc*camb_len, dth_LE]
-            camber_bezier_mp_th[-2,:] = [profile.TE_Metal_Angle_Loc*camb_len, dth_TE]
-            camber_bezier_mp_th[-1,:] = [camb_len, dth_wrap]
-            x = np.hstack([camber_bezier_mp_th[0:2,0], camber_bezier_mp_th[-2:,0]])
-            y = np.hstack([camber_bezier_mp_th[0:2,1], camber_bezier_mp_th[-2:,1]])
-            camber_bezier = bezier(x, y)
+            # Build base 4-point bezier from LE/TE metal angles
+            base_pts = np.array([
+                [0, 0],
+                [profile.LE_Metal_Angle_Loc*camb_len, dth_LE],
+                [profile.TE_Metal_Angle_Loc*camb_len, dth_TE],
+                [camb_len, dth_wrap],
+            ])
+            camber_bezier = bezier(base_pts[:,0], base_pts[:,1])
 
-        if n_wrap_displacements>0: 
-            # If there are displacements factor it in
-            # # Distance formula in cylindrical coordinates https://math.stackexchange.com/questions/3612484/how-do-you-calculate-distance-between-two-cylindrical-coordinates
-            # camb_len = np.sqrt(xr0[1]**2+xr1[1]**2 -2*xr0[1]*xr1[1]*np.cos(np.radians(profile.wrap_angle)) + (xr1[0]-xr0[0])**2)
-            j = 2
-            dl = profile.TE_Metal_Angle_Loc - profile.LE_Metal_Angle_Loc
-            for loc,displacement in zip(wrap_locs, wrap_disps):
-                l = profile.LE_Metal_Angle_Loc + loc*dl
-                nx,ny = camber_bezier.get_point_dt(l)
-                x1,y1 = camber_bezier.get_point(l)
-                x2 = x1
-                y2 = -displacement*dth_wrap
-                camber_bezier_mp_th[j,0] = x2
-                camber_bezier_mp_th[j,1] = y2
-                j+=1
-        camber_bezier = bezier(camber_bezier_mp_th[:,0],camber_bezier_mp_th[:,1])
+        if n_wrap_displacements>0:
+            # Filter out zero displacements — they add control points that distort the curve
+            nonzero = [(loc, disp) for loc, disp in zip(wrap_locs, wrap_disps) if disp != 0.0]
+            if nonzero:
+                dl = profile.TE_Metal_Angle_Loc - profile.LE_Metal_Angle_Loc
+                extra_pts = []
+                for loc, displacement in nonzero:
+                    l = profile.LE_Metal_Angle_Loc + loc*dl
+                    nx,ny = camber_bezier.get_point_dt(l)
+                    x1,y1 = camber_bezier.get_point(l)
+                    x2 = x1
+                    y2 = y1 - displacement*dth_wrap
+                    extra_pts.append([x2, y2])
+                # Insert extra points between LE and TE control points
+                camber_bezier_mp_th = np.vstack([
+                    base_pts[:2],
+                    np.array(extra_pts),
+                    base_pts[2:],
+                ])
+                camber_bezier = bezier(camber_bezier_mp_th[:,0], camber_bezier_mp_th[:,1])
         return camber_bezier,dth_wrap
 
     def apply_camber_shifts(self,le_theta_shifts:List[float]=[],te_theta_shifts:List[float]=[]):
