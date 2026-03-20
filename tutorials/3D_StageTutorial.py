@@ -4,6 +4,11 @@ import numpy as np
 from pyturbo.aero import Airfoil2D, Airfoil3D, Passage2D
 from pyturbo.helper import exp_ratio, bezier, pw_bezier2D,StackType
 
+# --- Stator Blade Design ---
+# Stator blades are non-rotating and redirect flow without doing work.
+# They are designed with zero rotation and typically have higher turning angles.
+# Three spanwise profiles (hub, mid, tip) define the 3D blade shape.
+
 stator_hub_axial_chord = 0.040
 #This creates the camberline
 stator_hub = Airfoil2D(alpha1=0,alpha2=72,axial_chord=stator_hub_axial_chord,stagger=52)
@@ -54,7 +59,11 @@ stator3D.add_sweep(sweep_y=[0,-0.05,0.01], sweep_z=[0.0, 0.5, 1]) # Z =1 is blad
 stator3D.add_lean(leanX=[0,0.1,0.05], leanZ=[0,0.5,1])
 stator3D.build(nProfiles=20,num_points=160,trailing_edge_points=20)
 # stator3D.plot3D()
-# Rotor 
+
+# --- Rotor Blade Design ---
+# Rotor blades extract or add energy to the flow.
+# In a symmetric stage, the rotor is designed to be bidirectional.
+# Note the different metal angles and stagger compared to the stator.
 ### Hub Profile
 rotor_axial_chord = 0.030
 rotor_hub = Airfoil2D(alpha1=35,alpha2=65,axial_chord=rotor_axial_chord,stagger=38)
@@ -106,6 +115,9 @@ rotor3D.stack(StackType.trailing_edge) # stators are typically stacked with lead
 # rotor3D.add_lean(leanX=[0,0.01,-0.02],leanZ=[0,0.5,1])
 rotor3D.build(nProfiles=20,num_points=60,trailing_edge_points=20)
 # rotor3D.plot3D()
+
+# --- Endwall Construction ---
+# Helper function and bezier curves to define hub and shroud flowpath contours.
 
 def match_end_slope(bezier1:bezier, x:List[float],y:List[float]):
     """Creates another bezier curve that matches the slope at the end of bezier 1
@@ -258,6 +270,11 @@ shroud_bezier4 = match_end_slope(shroud_bezier3,zshroud_points4,rshroud_points4)
 hub_bezier = pw_bezier2D([hub_bezier1,hub_bezier2,hub_bezier3,hub_bezier4])
 shroud_bezier = pw_bezier2D([shroud_bezier1,shroud_bezier2,shroud_bezier3,shroud_bezier4])
 
+# --- Passage Assembly ---
+# The passage is the flow path between hub and shroud endwalls, containing
+# both stator and rotor blade rows with a gap between them.
+# Blades are flipped and rotated to align with the passage coordinate system.
+
 import copy
 stator_adjusted = copy.deepcopy(stator3D)
 rotor_adjusted = copy.deepcopy(rotor3D)
@@ -283,3 +300,10 @@ passage.blade_fit(0)
 passage.plot2D()
 passage.plot3D()
 print('check')
+
+# --- Cross-Sectional Area and Blade Volume ---
+for name, blade in [("Stator", stator3D), ("Rotor", rotor3D)]:
+    area_hub = blade.get_cross_sectional_area(0)
+    area_tip = blade.get_cross_sectional_area(blade.shft_ss.shape[0] - 1)
+    volume = blade.get_blade_volume()
+    print(f"{name}: Area hub={area_hub:.6f}, Area tip={area_tip:.6f}, Volume={volume:.8f}")

@@ -712,11 +712,12 @@ class Airfoil2D:
         # Compute where throat starts in terms of ts (suction side)
         s,ss,ps,ts,airfoil = channel_get(self,self.s_c)
        
-        # Find the point at ts (suction side)            
+        # Find the point at ts (suction side)
         x1,y1 = self.ssBezier.get_point(ts)
         [x2, y2] = self.TE_ss_arc.get_point(0)
-        
-        ssBezier_new = list() 
+        x2 = float(x2[0]); y2 = float(y2[0])
+
+        ssBezier_new = list()
         for p,q in zip(self.ssBezierX,self.ssBezierY):
             if q>y1:
                 ssBezier_new.append((float(p),float(q)))
@@ -999,7 +1000,7 @@ def channel_get(airfoil:Airfoil2D,s_c:float):
         dArray = dist(x1[i],y1[i],x2,y2) # Takes a point on pressure side and
                                     #   compute the distance to 
                                     #   all points on the suction side
-        min_indx = np.where(dArray == np.amin(dArray))
+        min_indx = np.argmin(dArray)
         s[i] = dArray[min_indx]
         ps[i,0] = x1[i]
         ps[i,1] = y1[i]

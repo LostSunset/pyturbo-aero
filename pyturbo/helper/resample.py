@@ -8,6 +8,10 @@ import numpy.typing as npt
 
 
 def resample_curve(curve:npt.NDArray, M:int=100):
+    # Remove duplicate/near-duplicate consecutive points
+    dists = np.linalg.norm(np.diff(curve, axis=0), axis=1)
+    keep = np.concatenate([[True], dists > 1e-12])
+    curve = curve[keep]
     _, idx = np.unique(curve, axis=0, return_index=True)
     if len(idx) < len(curve):
         curve = curve[np.sort(idx)]

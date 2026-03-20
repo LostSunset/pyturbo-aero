@@ -609,6 +609,38 @@ class Airfoil3D:
         # avg_axial_chord = np.mean(axial_chord)
         return chord,axial_chord
 
+    def get_cross_sectional_area(self, profile_index: int) -> float:
+        """Compute 2D cross-sectional area of a blade profile at a given span index.
+
+        Uses the shoelace formula on the closed polygon formed by concatenating
+        the suction side and the reversed pressure side points.
+
+        Args:
+            profile_index (int): spanwise profile index (0 to nspan-1)
+
+        Returns:
+            float: cross-sectional area in the x-y plane at this span
+        """
+        x = np.concatenate([self.shft_ss[profile_index, :, 0],
+                            np.flip(self.shft_ps[profile_index, :, 0])])
+        y = np.concatenate([self.shft_ss[profile_index, :, 1],
+                            np.flip(self.shft_ps[profile_index, :, 1])])
+        return 0.5 * abs(float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+    def get_blade_volume(self) -> float:
+        """Compute blade volume by integrating 2D cross-sectional areas over span.
+
+        Uses the trapezoidal rule with z (spanwise) coordinates at the leading edge
+        of each profile section.
+
+        Returns:
+            float: blade volume
+        """
+        nprofiles = self.shft_ss.shape[0]
+        areas = np.array([self.get_cross_sectional_area(i) for i in range(nprofiles)])
+        z = self.shft_ss[:, 0, 2]  # spanwise coordinate at LE of each profile
+        return float(np.trapezoid(areas, z))
+
     def get_pitch(self,nBlades:int):
         """Get the pitch distribution for a 3D blade row
 
@@ -810,7 +842,7 @@ class Airfoil3D:
             Fits the blade with splines that run along the profiles
             Helps with the wavy design
         """
-        [nprofiles,npts] = self.shft_ps.shape
+        [nprofiles,npts,_] = self.shft_ps.shape
         self.spline_xps = []
         self.spline_yps = []
         self.spline_zps = []
