@@ -142,16 +142,16 @@ class AirfoilWavy(Airfoil3D):
                 rot = np.array([ [cosd(rotation_vector[j]), -sind(rotation_vector[j])], [sind(rotation_vector[j]), cosd(rotation_vector[j])] ]) 
                 rot = np.matmul(rot, np.array([[dx],[dy]]))
 
-                dx_rot = rot[0]
-                dy_rot = rot[1]
-                
+                dx_rot = float(rot[0, 0])
+                dy_rot = float(rot[1, 0])
+
                 self.shft_ss[i,j,0] = self.shft_ss[i,j,0] + dx_rot
                 self.shft_ss[i,j,1] = self.shft_ss[i,j,1] + dy_rot
-                
+
                 # Pressure Side
                 dx = self.shft_ps[i,j,0]-centerPointX[i]
                 dy = self.shft_ps[i,j,1]-centerPointY[i]
-                
+
                 # Scale dx and dy by thickness to chord
                 dx_scaled = dx*cxps[i]([j])[0]
                 dy_scaled = dy*cyps[i]([j])[0]
@@ -160,13 +160,13 @@ class AirfoilWavy(Airfoil3D):
                 ynew = centerPointY[i] + dy_scaled
                 dx = xnew - self.shft_ps[i,j,0]
                 dy = ynew - self.shft_ps[i,j,1]
-                
+
                 rot = np.array([[cosd(rotation_vector[j]), -sind(rotation_vector[j])], [sind(rotation_vector[j]), cosd(rotation_vector[j])]])
                 rot = np.matmul(rot, np.array([[dx],[dy]]))
 
-                dx_rot = rot[0]
-                dy_rot = rot[1]
-                self.shft_ps[i,j,0] = dx_rot + self.shft_ps[i,j,0] 
+                dx_rot = float(rot[0, 0])
+                dy_rot = float(rot[1, 0])
+                self.shft_ps[i,j,0] = dx_rot + self.shft_ps[i,j,0]
                 self.shft_ps[i,j,1] = dy_rot + self.shft_ps[i,j,1]
                 
             
@@ -186,11 +186,11 @@ class AirfoilWavy(Airfoil3D):
                         [cosd(rotation_vector[j]), -sind(rotation_vector[j])],
                         [sind(rotation_vector[j]), cosd(rotation_vector[j])]
                         ]), np.array([ [dx], [dy] ]))
-            dx_rot = rot[0]
-            dy_rot = rot[1]
+            dx_rot = float(rot[0, 0])
+            dy_rot = float(rot[1, 0])
             te_center_x[i] = dx_rot + te_center_x[i]
             te_center_y[i] = dy_rot + te_center_y[i]
-                    
+
         self.te_center_x = te_center_x
         self.te_center_y = te_center_y
         
@@ -220,7 +220,10 @@ class AirfoilWavy(Airfoil3D):
         nprofiles,npointsPerProfile,_ = self.shft_ss.shape
 
         t = np.linspace(0,1,nprofiles)
-        te_center_x = copy.deepcopy(self.te_center_x) #Create a copy showing the previous value
+        if not hasattr(self, 'te_center_x'):
+            self.te_center_x = copy.deepcopy(self.te_center[:,0])
+            self.te_center_y = copy.deepcopy(self.te_center[:,1])
+        te_center_x = copy.deepcopy(self.te_center_x)
         te_center_y = copy.deepcopy(self.te_center_y)
         # Create a spline that represents the SSRatio, PSRatio, LERatio, TERatio
         # Check to see if variable exists and if there are differences between the inputs
@@ -277,7 +280,7 @@ class AirfoilWavy(Airfoil3D):
             cyps.append(PchipInterpolator(t,1+profile_scale)) # Y is axial
         
         # Convert to int
-        vibrissaeIndx = vibrissaeIndx.astype(np.integer)
+        vibrissaeIndx = vibrissaeIndx.astype(int)
 
         chord = np.zeros(nprofiles)
         centerPointX = np.zeros(nprofiles)
@@ -332,8 +335,8 @@ class AirfoilWavy(Airfoil3D):
                 rot = np.array([ [cosd(rotation_vector[j]), -sind(rotation_vector[j])], [sind(rotation_vector[j]), cosd(rotation_vector[j])] ]) 
                 rot = np.matmul(rot, np.array([[dx],[dy]]))
                 
-                dx_rot = rot[0]
-                dy_rot = rot[1]
+                dx_rot = float(rot[0, 0])
+                dy_rot = float(rot[1, 0])
                 
                 self.shft_ss[i,j,0] = self.shft_ss[i,j,0] + dx_rot
                 self.shft_ss[i,j,1] = self.shft_ss[i,j,1] + dy_rot 
@@ -354,8 +357,8 @@ class AirfoilWavy(Airfoil3D):
                 rot = np.array([[cosd(rotation_vector[j]), -sind(rotation_vector[j])], [sind(rotation_vector[j]), cosd(rotation_vector[j])]])
                 rot = np.matmul(rot, np.array([[dx],[dy]]))
 
-                dx_rot = rot[0]
-                dy_rot = rot[1]
+                dx_rot = float(rot[0, 0])
+                dy_rot = float(rot[1, 0])
                 self.shft_ps[i,j,0] = dx_rot + self.shft_ps[i,j,0] 
                 self.shft_ps[i,j,1] = dy_rot + self.shft_ps[i,j,1]
                 
@@ -378,8 +381,8 @@ class AirfoilWavy(Airfoil3D):
                             [sind(rotation_vector[j]), cosd(rotation_vector[j])]
                             ])
             rot = np.matmul(rot,np.array([[dx],[dy]]))
-            dx_rot = rot[0]
-            dy_rot = rot[1]
+            dx_rot = float(rot[0, 0])
+            dy_rot = float(rot[1, 0])
             te_center_x[i] = dx_rot + te_center_x[i]
             te_center_y[i] = dy_rot + te_center_y[i]
             
@@ -471,6 +474,9 @@ class AirfoilWavy(Airfoil3D):
 
         TE_Radius_ss = np.zeros(nprofiles)
         TE_Radius_ps = np.zeros(nprofiles)
+        if not hasattr(self, 'te_center_x'):
+            self.te_center_x = copy.deepcopy(self.te_center[:,0])
+            self.te_center_y = copy.deepcopy(self.te_center[:,1])
         te_center_x = copy.deepcopy(self.te_center_x)
         te_center_y = copy.deepcopy(self.te_center_y)
 
@@ -522,8 +528,8 @@ class AirfoilWavy(Airfoil3D):
                 [cosd(rotation_vector[indx_point]),-sind(rotation_vector[indx_point])], 
                     [sind(rotation_vector[indx_point]), cosd(rotation_vector[indx_point])]
                     ]), np.array([[dx], [dy]]))
-            dx_rot = rot[0]
-            dy_rot = rot[1]
+            dx_rot = float(rot[0, 0])
+            dy_rot = float(rot[1, 0])
 
             xss[indx_point] = xss[indx_point] + dx_rot
             yss[indx_point] = yss[indx_point] + dy_rot
@@ -545,8 +551,8 @@ class AirfoilWavy(Airfoil3D):
                 [cosd(rotation_vector[indx_point]),-sind(rotation_vector[indx_point])], 
                     [sind(rotation_vector[indx_point]), cosd(rotation_vector[indx_point])]
                     ]), np.array([[dx], [dy]]))
-            dx_rot = rot[0]
-            dy_rot = rot[1]
+            dx_rot = float(rot[0, 0])
+            dy_rot = float(rot[1, 0])
             xps[indx_point] = dx_rot + xps[indx_point]
             yps[indx_point] = dy_rot + yps[indx_point]
             return xss,yss,xps,yps
@@ -589,8 +595,8 @@ class AirfoilWavy(Airfoil3D):
                     [cosd(rotation_vector[j]), -sind(rotation_vector[j])], 
                     [sind(rotation_vector[j]), cosd(rotation_vector[j])]
                     ]),np.array([[dx], [dy]]))
-            dx_rot = rot[0]
-            dy_rot = rot[1]
+            dx_rot = float(rot[0, 0])
+            dy_rot = float(rot[1, 0])
             te_center_x_temp = dx_rot + te_center_x[profile_indx]
             te_center_y_temp = dy_rot + te_center_y[profile_indx]
             

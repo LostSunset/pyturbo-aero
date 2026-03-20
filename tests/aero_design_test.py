@@ -15,10 +15,10 @@ class TestDesign(unittest.TestCase):
 
         # ss_height=[0.2400, 0.2600, 0.2200, 0.1800]
         # stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
-        # stator_hub.le_thickness_match()
+        # stator_hub.match_le_thickness()
         # stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
 
-        # stator_hub.flow_guidance2(10)
+        # stator_hub.add_ss_flow_guidance_2(0.8,10)
         # fig = stator_hub.plot2D()
         # plt.show()
         # stator_hub.le_radius_estimate()
@@ -38,10 +38,10 @@ class TestDesign(unittest.TestCase):
 
         # ss_height=[0.20, 0.200, 0.18, 0.18]
         # rotor_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
-        # rotor_hub.le_thickness_match()
+        # rotor_hub.match_le_thickness()
         # rotor_hub.te_create(radius=0.1,wedge_ss=2.5,wedge_ps=2.4)
 
-        # # rotor_hub.flow_guidance2(10)
+        # # rotor_hub.add_ss_flow_guidance_2(0.8,10)
         # fig = rotor_hub.plot2D()
         # plt.show()
         pass
@@ -58,8 +58,8 @@ class TestDesign(unittest.TestCase):
         stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_hub.le_thickness_match()
-        stator_hub.flow_guidance2(10)
+        stator_hub.match_le_thickness()
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
 
         # Tip Geometry
         stator_tip = Airfoil2D(alpha1=5,alpha2=72,axial_chord=0.036,stagger=56)
@@ -73,8 +73,8 @@ class TestDesign(unittest.TestCase):
         stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_tip.le_thickness_match()
-        stator_tip.flow_guidance2(6)
+        stator_tip.match_le_thickness()
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
         plt.clf()
         plt.close('all')
         # Begin 3D design
@@ -100,8 +100,8 @@ class TestDesign(unittest.TestCase):
         stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_hub.le_thickness_match()
-        stator_hub.flow_guidance2(10)
+        stator_hub.match_le_thickness()
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
         # stator_hub.plot2D()
 
         # Tip Geometry
@@ -114,8 +114,8 @@ class TestDesign(unittest.TestCase):
         stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_tip.le_thickness_match()
-        stator_tip.flow_guidance2(6)
+        stator_tip.match_le_thickness()
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
 
         # Begin 3D design
         span = 0.05
@@ -163,7 +163,7 @@ class TestDesign(unittest.TestCase):
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
-        stator_hub.flow_guidance2(10)
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
         # stator_hub.plot2D()
 
         # Tip Geometry
@@ -177,7 +177,7 @@ class TestDesign(unittest.TestCase):
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
-        stator_tip.flow_guidance2(6)
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
 
         # Begin 3D design
         span = 0.05
@@ -227,7 +227,7 @@ class TestDesign(unittest.TestCase):
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
-        stator_hub.flow_guidance2(10)
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
         # stator_hub.plot2D()
 
         # Tip Geometry
@@ -241,7 +241,7 @@ class TestDesign(unittest.TestCase):
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
-        stator_tip.flow_guidance2(6)
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
 
         # Begin 3D design
         span = 0.05
@@ -297,7 +297,7 @@ class TestDesign(unittest.TestCase):
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
-        stator_hub.flow_guidance2(10)
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
         # stator_hub.plot2D()
 
         # Tip Geometry
@@ -311,7 +311,7 @@ class TestDesign(unittest.TestCase):
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
-        stator_tip.flow_guidance2(6)
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
 
         # Begin 3D design
         span = 0.05
@@ -339,8 +339,8 @@ class TestDesign(unittest.TestCase):
         stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_hub.le_thickness_match()
-        stator_hub.flow_guidance2(10)
+        stator_hub.match_le_thickness()
+        stator_hub.add_ss_flow_guidance_2(0.8,10)
         # stator_hub.plot2D()
 
         # Stator Tip Geometry
@@ -353,8 +353,8 @@ class TestDesign(unittest.TestCase):
         stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        stator_tip.le_thickness_match()
-        stator_tip.flow_guidance2(6)
+        stator_tip.match_le_thickness()
+        stator_tip.add_ss_flow_guidance_2(0.8,6)
 
         # Begin Stator 3D design
         stator_span = cax_stator
@@ -375,8 +375,8 @@ class TestDesign(unittest.TestCase):
         rotor_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         rotor_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        rotor_hub.le_thickness_match()
-        rotor_hub.flow_guidance2(3)
+        rotor_hub.match_le_thickness()
+        rotor_hub.add_ss_flow_guidance_2(0.8,3)
         #rotor_hub.plot2D()
 
         # Rotor Tip Geometry
@@ -389,8 +389,8 @@ class TestDesign(unittest.TestCase):
         rotor_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         rotor_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
-        rotor_tip.le_thickness_match()
-        rotor_tip.flow_guidance2(3)
+        rotor_tip.match_le_thickness()
+        rotor_tip.add_ss_flow_guidance_2(0.8,3)
 
         # Begin Rotor 3D design
         rotor_span = 0.05
