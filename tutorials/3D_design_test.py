@@ -15,7 +15,7 @@ stator_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion
 stator_hub.match_le_thickness()
 stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
 
-stator_hub.flow_guidance2(10)
+stator_hub.add_ss_flow_guidance_2(0.8, 10)
 # stator_hub.plot2D()
 stator_mid = Airfoil2D(alpha1=10,alpha2=72,axial_chord=0.038,stagger=45) # This creates the camberline
 # Building Leading Edge
@@ -29,7 +29,7 @@ stator_mid.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion
 stator_mid.match_le_thickness()
 stator_mid.te_create(radius=0.0012,wedge_ss=3.5,wedge_ps=2.4)
 
-stator_mid.flow_guidance2(10)
+stator_mid.add_ss_flow_guidance_2(0.8, 10)
 
 stator_tip = Airfoil2D(alpha1=5,alpha2=60,axial_chord=0.038,stagger=40) # This creates the camberline
 # Building Leading Edge
@@ -43,7 +43,7 @@ stator_tip.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion
 stator_tip.match_le_thickness()
 stator_tip.te_create(radius=0.001,wedge_ss=1.5,wedge_ps=2.4)
 
-stator_tip.flow_guidance2(5)
+stator_tip.add_ss_flow_guidance_2(0.8, 5)
 
 
 from pyturbo.aero import Airfoil3D
