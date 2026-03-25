@@ -25,8 +25,8 @@ stator2D.add_ss_flow_guidance_2(s_c=0.8, n=10)
 
 
 stator3D = Airfoil3D(profileArray=[stator2D,stator2D,stator2D],profile_loc=[0.0,0.5,1.0], height = 0.02)
-stator3D.stack(StackType.leading_edge) # Stators are typically stacked with leading edge; rotors with centroid or trailing edge
-# You can also use StackType.centroid or StackType.trailing_edge
+stator3D.stack(StackType.Leading_Edge) # Stators are typically stacked with leading edge; rotors with centroid or trailing edge
+# You can also use StackType.Centroid or StackType.Trailing_Edge
 stator3D.build(nProfiles=20, num_points=50, trailing_edge_points=10)
 # stator3D.center_le() # Centers the leading edge at (0,0); use this only if you are simulating a single blade. Makes creating planes for data extraction easier.
 # stator3D.plot3D()

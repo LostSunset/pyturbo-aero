@@ -48,7 +48,7 @@ stator_tip.add_ss_flow_guidance_2(s_c=0.75,n=10)
 
 
 # stator3D = Airfoil3D(profileArray=[stator_hub,stator_mid,stator_tip], profile_loc=[0.0,0.5,1.0], height = 0.04)
-# stator3D.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+# stator3D.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 # stator3D.add_sweep(sweep_y=[0,-0.05,0.01], sweep_z=[0.0, 0.5, 1]) # Z =1 is blade tip, Z = 0 is blade hub. The units are in percentage
 # stator3D.add_lean(leanX=[0,0.1,0.05], leanZ=[0,0.5,1])
 # stator3D.build(nProfiles=20,num_points=160,trailing_edge_points=20)
@@ -63,7 +63,7 @@ psratio = ssratio*0
 lewave_angle = 0*ssratio
 tewave_angle = 0*ssratio
 stator3D_Wavy1 = AirfoilWavy(profileArray=[stator_hub,stator_mid,stator_tip],profile_loc=[0,0.5,1],height=0.04)
-stator3D_Wavy1.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+stator3D_Wavy1.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 stator3D_Wavy1.build(nProfiles=100,num_points=160,trailing_edge_points=20)
 stator3D_Wavy1.stretch_thickness_chord(ssratio,psratio,leratio,teratio,lewave_angle,tewave_angle)
 # stator3D_Wavy1.plot3D()
@@ -78,19 +78,19 @@ lewave_angle = 0*ssratio
 tewave_angle = 0*ssratio
 
 stator3D_Wavy1 = AirfoilWavy(profileArray=[stator_hub,stator_mid,stator_tip],profile_loc=[0,0.5,1],height=0.04)
-stator3D_Wavy1.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+stator3D_Wavy1.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 stator3D_Wavy1.build(nProfiles=100,num_points=160,trailing_edge_points=20)
 stator3D_Wavy1.stretch_thickness_chord(ssratio,psratio,leratio,teratio,lewave_angle,tewave_angle,TE_smooth=0.85)
 # stator3D_Wavy1.plot3D()
 
 stator3D_Wavy2 = AirfoilWavy(profileArray=[stator_hub,stator_mid,stator_tip],profile_loc=[0,0.5,1],height=0.04)
-stator3D_Wavy2.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+stator3D_Wavy2.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 stator3D_Wavy2.build(nProfiles=100,num_points=160,trailing_edge_points=20)
 stator3D_Wavy2.stretch_thickness_chord_te(ssratio,psratio,leratio,teratio,lewave_angle,tewave_angle,TE_smooth=0.85)
 # stator3D_Wavy2.plot3D()
 
 stator3D_Wavy3 = AirfoilWavy(profileArray=[stator_hub,stator_mid,stator_tip],profile_loc=[0,0.5,1],height=0.04)
-stator3D_Wavy3.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+stator3D_Wavy3.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 stator3D_Wavy3.build(nProfiles=100,num_points=160,trailing_edge_points=20)
 stator3D_Wavy3.whisker_blade(leratio,teratio,psratio,lewave_angle,tewave_angle,TE_smooth=0.85)
 # stator3D_Wavy3.plot3D()

@@ -98,18 +98,18 @@ class Airfoil3D:
         self.IsSplineFitted = False
         self.IsSplineFittedShell = False
 
-    def stack(self, stackType=StackType.centroid):
+    def stack(self, stackType=StackType.Centroid):
         """Each airfoil profile is stacked on top of each other based on the leading edge, trailing edge, or centroid
 
         Args:
-            stackType (StackType, optional): Options are centroid, Leading Edge, Trailing Edge. Defaults to StackType.centroid.
+            stackType (StackType, optional): Options are centroid, Leading Edge, Trailing Edge. Defaults to StackType.Centroid.
         """
         stack_bezier_ctrl_pts = np.zeros((len(self.profileArray),3))
         self.stackType = stackType
         te_center = np.zeros((len(self.profileArray),3))
         if (len(self.profileArray) >= 2):
             # Stack the airfoils about LE
-            if (stackType == StackType.leading_edge):
+            if (stackType == StackType.Leading_Edge):
                 hub = self.profileArray[0]
                 hx, hy = hub.camberBezier.get_point(0)
                 stack_bezier_ctrl_pts[0,0] = float(hx)
@@ -134,7 +134,7 @@ class Airfoil3D:
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
             # Stack the airfoils about TE
-            elif (stackType == StackType.trailing_edge):
+            elif (stackType == StackType.Trailing_Edge):
                 hub = self.profileArray[0]
                 hx, hy = hub.camberBezier.get_point(1)
                 stack_bezier_ctrl_pts[0,0] = float(hx)
@@ -158,7 +158,7 @@ class Airfoil3D:
                     hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
-            elif (stackType == StackType.centroid):
+            elif (stackType == StackType.Centroid):
                 hx, hy = self.profileArray[0].get_centroid()
                 stack_bezier_ctrl_pts[0,0] = hx
                 stack_bezier_ctrl_pts[0,1] = hy
@@ -182,7 +182,7 @@ class Airfoil3D:
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
 
-            elif (stackType == StackType.none):
+            elif (stackType == StackType.None_):
                 # No shift — profiles stay where the user placed them.
                 # Compute centroid spline through actual profile centroids so lean/sweep still work.
                 for i in range(len(self.profileArray)):
@@ -688,9 +688,9 @@ class Airfoil3D:
 
             # Shift the stack_bezier to align with the stacking 
             x = bx[i]; y = by[i]
-            if (self.stackType == StackType.centroid or self.stackType == StackType.none):
+            if (self.stackType == StackType.Centroid or self.stackType == StackType.None_):
                 sx = cx[i]; sy = cy[i]
-            elif (self.stackType == StackType.leading_edge):
+            elif (self.stackType == StackType.Leading_Edge):
                 sx = ps[i,0,0]
                 sy = ps[i,0,1]
             else:  # trailing_edge
@@ -1477,7 +1477,7 @@ def import_geometry(folder:str,npoints:int=100,nspan:int=2,axial_chord:float=1,s
     a3D.ss = copy.deepcopy(a3D.shft_ss)
     a3D.ps = copy.deepcopy(a3D.shft_ps)
     a3D.bImportedBlade = True
-    a3D.stackType=StackType.centroid # Centroid
+    a3D.stackType=StackType.Centroid # Centroid
     a3D.span = max(z)-min(z)
     a3D.spanwise_spline_fit()
     a3D.nspan = nspan

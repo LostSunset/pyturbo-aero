@@ -42,7 +42,7 @@ stator_tip.add_ss_flow_guidance_2(s_c=0.75,n=6)
 
 # Begin 3D design
 stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-stator3D.stack(StackType.trailing_edge)
+stator3D.stack(StackType.Trailing_Edge)
 # stator3D.add_lean(leanX=[0, 0.05, 1], leanZ=[0,0.5,1])
 stator3D.build(nProfiles=100,num_points=80,trailing_edge_points=20)
 stator3D.plot3D()
@@ -61,7 +61,7 @@ For blade designs that require a constant trailing edge radius. The example belo
 ```python
 # Wavy Geometry
 stator3D_wavy = AirfoilWavy(profileArray=[stator_hub,stator_tip],profile_loc=[0,1],height=0.05)
-stator3D_wavy.stack(StackType.trailing_edge)
+stator3D_wavy.stack(StackType.Trailing_Edge)
 stator3D_wavy.build(nProfiles=100,num_points=160,trailing_edge_points=20)
 
 t = np.linspace(0,10*np.pi,100)
@@ -81,7 +81,7 @@ If trailing edge radius is not a problem and you want to explore designs that ca
 
 ```python
 stator3D_wavy = AirfoilWavy(profileArray=[stator_hub,stator_tip],profile_loc=[0,1],height=0.05)
-stator3D_wavy.stack(StackType.trailing_edge)
+stator3D_wavy.stack(StackType.Trailing_Edge)
 stator3D_wavy.add_lean(leanX=[0, 0.05, 0], leanZ=[0,0.5,1])
 stator3D_wavy.build(nProfiles=100,num_points=100,trailing_edge_points=20)
 
@@ -103,7 +103,7 @@ By removing the suction side ratio and allowing it to vary, a whisker-like blade
 
 ```python
 stator3D_wavy = AirfoilWavy(profileArray=[stator_hub,stator_tip],profile_loc=[0,1],height=0.05)
-stator3D_wavy.stack(StackType.trailing_edge)
+stator3D_wavy.stack(StackType.Trailing_Edge)
 stator3D_wavy.add_lean(leanX=[0, 0.05, 0], leanZ=[0,0.5,1])
 stator3D_wavy.build(nProfiles=100,num_points=100,trailing_edge_points=20)
 

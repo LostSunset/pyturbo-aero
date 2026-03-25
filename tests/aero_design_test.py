@@ -79,7 +79,7 @@ class TestDesign(unittest.TestCase):
         plt.close('all')
         # Begin 3D design
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.centroid)
+        stator3D.stack(StackType.Centroid)
         # stator3D.add_lean([0, 0.05, 1], [0,0.5,1])
         stator3D.build(100,80,20)
         fig = stator3D.plot3D()
@@ -120,7 +120,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.build(100,100,20)
         # stator3D.plot3D()
@@ -182,14 +182,14 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         # stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        # stator3D.stack(StackType.trailing_edge)
+        # stator3D.stack(StackType.Trailing_Edge)
         # stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         # stator3D.build(100,100,20)
         # stator3D.plot3D()
 
         # Wavy Geometry
         stator3D_wavy = AirfoilWavy([stator_hub,stator_tip],[0,1],span)
-        stator3D_wavy.stack(StackType.trailing_edge)
+        stator3D_wavy.stack(StackType.Trailing_Edge)
         stator3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D_wavy.build(100,100,20)
         stator3D_wavy.spanwise_spline_fit()
@@ -246,7 +246,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D_wavy = AirfoilWavy([stator_hub,stator_tip],[0,1],0.05)
-        stator3D_wavy.stack(StackType.trailing_edge)
+        stator3D_wavy.stack(StackType.Trailing_Edge)
         stator3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D_wavy.build(100,100,20)
         stator3D_wavy.plot3D()
@@ -316,7 +316,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.create_blade(100,100,20)
         # stator3D.plot3D()
@@ -359,7 +359,7 @@ class TestDesign(unittest.TestCase):
         # Begin Stator 3D design
         stator_span = cax_stator
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],stator_span)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.build(100,100,20)
         # stator3D.plot3D()
@@ -395,7 +395,7 @@ class TestDesign(unittest.TestCase):
         # Begin Rotor 3D design
         rotor_span = 0.05
         rotor3D_wavy = AirfoilWavy([rotor_hub,rotor_tip],[0,1],rotor_span)
-        rotor3D_wavy.stack(StackType.trailing_edge)
+        rotor3D_wavy.stack(StackType.Trailing_Edge)
         rotor3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         rotor3D_wavy.build(100,100,20)
         rotor3D_wavy.flip_cw()
