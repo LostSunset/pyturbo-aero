@@ -31,18 +31,20 @@ class Airfoil2D:
     psBezierY:List[float]
 
         
-    def __init__(self,alpha1:float,alpha2:float,axial_chord:float,stagger:float):
-        """Constructor for Airfoil2D 
+    def __init__(self,alpha1:float,alpha2:float,axial_chord:float,stagger:float,left_to_right:bool=False):
+        """Constructor for Airfoil2D
 
         Args:
-            alpha1 (float): inlet metal angle of the blade 0 to 90 deg
-            alpha2 (float): outlet metal angle of the blade 0 to 90 deg
+            alpha1 (float): inlet metal angle of the blade. TTB: 0 to 90 deg from axial (-Y). LR: measured from +X axis, positive above.
+            alpha2 (float): outlet metal angle of the blade. TTB: 0 to 90 deg from axial (-Y). LR: measured from +X axis, negative below.
             axial_chord (float): Axial chord of the blade
             stagger (float): stagger angle measured from trailing edge to leading edge
+            left_to_right (bool, optional): If True, build geometry with flow going left-to-right. Defaults to False (top-to-bottom).
         """
         self.alpha1 = alpha1
         self.alpha2 = alpha2
         self.stagger = stagger
+        self.left_to_right = left_to_right
         self.chord = axial_chord/np.cos(np.radians(self.stagger))
         self.__create_camber()
     
@@ -53,11 +55,19 @@ class Airfoil2D:
         # Creates the airfoil camberline
         x2 = 0
         y2 = 0
-        # Assumes CCW, call flip to convert to CW
-        x1 = -self.chord*np.sin(np.radians(self.stagger))
-        y1 = self.chord*np.cos(np.radians(self.stagger))
-        r1 = ray2D(x1,y1,-np.sin(np.radians(self.alpha1)),-np.cos(np.radians(self.alpha1)))
-        r2 = ray2D(x2,y2,-np.sin(np.radians(self.alpha2)),np.cos(np.radians(self.alpha2)))
+        if self.left_to_right:
+            # LR: LE at negative X, TE at origin, angles from +X axis
+            x1 = -self.chord*np.cos(np.radians(self.stagger))
+            y1 = -self.chord*np.sin(np.radians(self.stagger))
+            r1 = ray2D(x1,y1,np.cos(np.radians(self.alpha1)),np.sin(np.radians(self.alpha1)))
+            r2 = ray2D(x2,y2,-np.cos(np.radians(self.alpha2)),-np.sin(np.radians(self.alpha2)))
+        else:
+            # TTB: LE at positive Y, TE at origin, angles from axial (-Y)
+            # Assumes CCW, call flip to convert to CW
+            x1 = -self.chord*np.sin(np.radians(self.stagger))
+            y1 = self.chord*np.cos(np.radians(self.stagger))
+            r1 = ray2D(x1,y1,-np.sin(np.radians(self.alpha1)),-np.cos(np.radians(self.alpha1)))
+            r2 = ray2D(x2,y2,-np.sin(np.radians(self.alpha2)),np.cos(np.radians(self.alpha2)))
 
         # Find intersection Point
         [x,y,_,_] = ray2D_intersection(r1,r2)
@@ -100,13 +110,13 @@ class Airfoil2D:
         psBezierX = [self.cambBezierX[0]]
         psBezierY = [self.cambBezierY[0]]
 
-        # Add Thickness to the suction side 
+        # Add Thickness to the suction side
         if (not counter_rotation):
-            theta_ss = 180-self.alpha1
+            theta_ss = (self.alpha1 - 90) if self.left_to_right else (180 - self.alpha1)
             ssBezierX.append(ssBezierX[0]+np.cos(np.radians(theta_ss))*self.le_thickness)
             ssBezierY.append(ssBezierY[0]+np.sin(np.radians(theta_ss))*self.le_thickness)
         else:
-            theta_ps = -self.alpha1
+            theta_ps = (self.alpha1 + 90) if self.left_to_right else (-self.alpha1)
             psBezierX.append(psBezierX[0]+np.cos(np.radians(theta_ps))*self.le_thickness)
             psBezierY.append(psBezierY[0]+np.sin(np.radians(theta_ps))*self.le_thickness)
 
@@ -142,7 +152,7 @@ class Airfoil2D:
             [x[1], y[1]] = self.ssBezier.get_point(t1)
             [x[2], y[2]] = self.ssBezier.get_point(t2)
             dydx1 = derivative.derivative_2(x, y)
-            theta = -self.alpha1
+            theta = (self.alpha1 + 90) if self.left_to_right else (-self.alpha1)
 
             def nest_ps(h):
                 self.psBezierX[1] = self.psBezierX[0] + np.cos(np.radians(theta)) * h
@@ -188,7 +198,7 @@ class Airfoil2D:
             [x[1], y[1]] = self.ssBezier.get_point(t1)
             [x[2], y[2]] = self.ssBezier.get_point(t2)
             dydx1 = derivative.derivative_2(x, y)
-            theta = self.alpha2
+            theta = (self.alpha2 + 90) if self.left_to_right else self.alpha2
 
             def nest_ps(h):
                 self.psBezierX[-2] = self.psBezierX[-1] + np.cos(np.radians(theta)) * h
@@ -248,8 +258,8 @@ class Airfoil2D:
         [x[1], y[1]] = self.ssBezier.get_point(t1)   # Derivative on the suction side (Needs to match)
         [x[2], y[2]] = self.ssBezier.get_point(t2)
         dydx1 = derivative.derivative_2(x,y)
-        theta_ps = -self.alpha1
-        
+        theta_ps = (self.alpha1 + 90) if self.left_to_right else (-self.alpha1)
+
         def nest_ps_derivative2(h):
             self.psBezierX[1] = self.psBezierX[0]+np.cos(np.radians(theta_ps))*h
             self.psBezierY[1] = self.psBezierY[0]+np.sin(np.radians(theta_ps))*h
@@ -449,9 +459,9 @@ class Airfoil2D:
             [x, y] = b.get_point(t[i])
             ## Compute the angle perpendicular
             if (t[i] ==0):
-                theta = -self.alpha1
+                theta = (self.alpha1 + 90) if self.left_to_right else (-self.alpha1)
             elif (t[i]==1):
-                theta = self.alpha2
+                theta = (self.alpha2 + 90) if self.left_to_right else self.alpha2
             else:
                 [dx, dy] = b.get_point_dt(t[i])
                 theta = np.degrees(np.atan2(-dx,dy))
@@ -473,8 +483,11 @@ class Airfoil2D:
         Args:
             x_pitch (float): [description]
         """
-        # Pitch_Add Adds pitch or shifts turbine by x direction
-        self.shift(x_pitch,0)
+        # Pitch_Add Adds pitch or shifts turbine by appropriate direction
+        if self.left_to_right:
+            self.shift(0, x_pitch)  # LR: pitch in Y direction
+        else:
+            self.shift(x_pitch, 0)  # TTB: pitch in X direction
 
     def shift(self,x:float,y:float):
         """Shifts the blade over by x or y direction. LE points +y where TE is at (0,0) Be sure to take into account the rotation of the blade
@@ -526,6 +539,52 @@ class Airfoil2D:
         le_x = self.cambBezierX[0]
         le_y = self.cambBezierY[0]
         self.shift(-le_x, -le_y)
+
+    def rotate(self, angle: float):
+        """Rotates the airfoil around the origin by angle degrees (CCW positive).
+
+        Args:
+            angle (float): rotation angle in degrees
+        """
+        cos_a = np.cos(np.radians(angle))
+        sin_a = np.sin(np.radians(angle))
+
+        def rot(xlist, ylist):
+            xa = convert_to_ndarray(xlist)
+            ya = convert_to_ndarray(ylist)
+            xn = xa * cos_a - ya * sin_a
+            yn = xa * sin_a + ya * cos_a
+            return xn.tolist(), yn.tolist()
+
+        self.cambBezierX, self.cambBezierY = rot(self.cambBezierX, self.cambBezierY)
+        self.camberBezier = bezier(self.cambBezierX, self.cambBezierY)
+
+        self.ssBezierX, self.ssBezierY = rot(self.ssBezierX, self.ssBezierY)
+        if isinstance(self.ssBezier, pw_bezier2D):
+            for b in self.ssBezier.bezierArray:
+                b.x, b.y = rot(b.x, b.y)
+        else:
+            self.ssBezier = bezier(self.ssBezierX, self.ssBezierY)
+
+        self.psBezierX, self.psBezierY = rot(self.psBezierX, self.psBezierY)
+        if isinstance(self.psBezier, pw_bezier2D):
+            for b in self.psBezier.bezierArray:
+                b.x, b.y = rot(b.x, b.y)
+        else:
+            self.psBezier = bezier(self.psBezierX, self.psBezierY)
+
+        if hasattr(self, 'TE_ps_arc'):
+            x, y = self.TE_ps_arc.x, self.TE_ps_arc.y
+            self.TE_ps_arc.x = x * cos_a - y * sin_a
+            self.TE_ps_arc.y = x * sin_a + y * cos_a
+            self.TE_ps_arc.alpha_start += angle
+            self.TE_ps_arc.alpha_stop += angle
+
+            x, y = self.TE_ss_arc.x, self.TE_ss_arc.y
+            self.TE_ss_arc.x = x * cos_a - y * sin_a
+            self.TE_ss_arc.y = x * sin_a + y * cos_a
+            self.TE_ss_arc.alpha_start += angle
+            self.TE_ss_arc.alpha_stop += angle
 
     def get_points(self,n:int=100) -> Tuple[npt.NDArray,npt.NDArray]:
         """Get the airfoil points. This will you 100 poitns defining the suction side and pressure side
@@ -725,7 +784,8 @@ class Airfoil2D:
 
         ssBezier_new = list()
         for p,q in zip(self.ssBezierX,self.ssBezierY):
-            if q>y1:
+            upstream = (p < x1) if self.left_to_right else (q > y1)
+            if upstream:
                 ssBezier_new.append((float(p),float(q)))
                 
         # ssBezierY_new = [p for p in self.ssBezierY if p>y1]
