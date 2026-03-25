@@ -521,6 +521,12 @@ class Airfoil2D:
             self.TE_ss_arc.x = self.TE_ss_arc.x + x
             self.TE_ss_arc.y = self.TE_ss_arc.y + y
 
+    def center_le(self):
+        """Shifts the airfoil so the leading edge is at (0,0) instead of the trailing edge."""
+        le_x = self.cambBezierX[0]
+        le_y = self.cambBezierY[0]
+        self.shift(-le_x, -le_y)
+
     def get_points(self,n:int=100) -> Tuple[npt.NDArray,npt.NDArray]:
         """Get the airfoil points. This will you 100 poitns defining the suction side and pressure side
 
@@ -960,6 +966,42 @@ class Airfoil2D:
         # Find avg thickness
         avg_thickness = np.mean(d)
         return indx, max_thickness, avg_thickness
+
+def plot2D_compare(airfoils: List[Airfoil2D], labels: Optional[List[str]] = None):
+    """Plots multiple 2D airfoils overlaid on the same figure for comparison.
+
+    Args:
+        airfoils (List[Airfoil2D]): list of Airfoil2D objects to plot
+        labels (Optional[List[str]]): optional labels for each airfoil in the legend
+    """
+    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
+              'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+    t = np.linspace(0, 1, 200)
+    t_te = np.linspace(0, 1, 20)
+
+    fig = plt.figure(clear=True)
+    for i, airfoil in enumerate(airfoils):
+        c = colors[i % len(colors)]
+        label = labels[i] if labels else f'Airfoil {i+1}'
+
+        [xSS, ySS] = airfoil.ssBezier.get_point(t)
+        [xPS, yPS] = airfoil.psBezier.get_point(t)
+        [xcamber, ycamber] = airfoil.camberBezier.get_point(t)
+
+        plt.plot(xcamber, ycamber, color=c, linestyle='dashed', linewidth=1)
+        plt.plot(xSS, ySS, color=c, linestyle='solid', linewidth=2, label=f'{label} SS')
+        plt.plot(xPS, yPS, color=c, linestyle='solid', linewidth=1.5, label=f'{label} PS')
+
+        if hasattr(airfoil, 'TE_ps_arc'):
+            [x, y] = airfoil.TE_ps_arc.get_point(t_te)
+            plt.plot(x, y, color=c, linestyle='solid', linewidth=1.5)
+            [x, y] = airfoil.TE_ss_arc.get_point(t_te)
+            plt.plot(x, y, color=c, linestyle='solid', linewidth=2)
+
+    plt.gca().set_aspect('equal')
+    plt.legend()
+    plt.show()
+
 
 def channel_get(airfoil:Airfoil2D,s_c:float):        
     """Gets adjacent airfoil 
