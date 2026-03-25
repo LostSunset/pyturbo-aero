@@ -1,5 +1,6 @@
 Airfoil 2D
 ====================
-.. autoclass:: pyturbo.aero.airfoil2D
+.. automodule:: pyturbo.aero.airfoil2D
     :members:
-    :special-members:
+    :undoc-members:
+    :show-inheritance:

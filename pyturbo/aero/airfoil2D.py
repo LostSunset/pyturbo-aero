@@ -2,7 +2,6 @@ import numpy as np
 from typing import List, Optional, Tuple
 from scipy.optimize import minimize_scalar
 from ..helper import bezier,line2D,ray2D,arc,ray2D_intersection,exp_ratio,convert_to_ndarray,derivative,dist,pw_bezier2D,resample_curve
-from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 import copy
 import numpy.typing as npt
@@ -85,8 +84,12 @@ class Airfoil2D:
             x (float): arbitrary x coordinate
             y (float): arbitrary y coordinate
         """
-        x1 = -self.chord * np.sin(self.stagger)
-        y1 = self.chord * np.cos(self.stagger)
+        if self.left_to_right:
+            x1 = -self.chord * np.cos(np.radians(self.stagger))
+            y1 = -self.chord * np.sin(np.radians(self.stagger))
+        else:
+            x1 = -self.chord * np.sin(np.radians(self.stagger))
+            y1 = self.chord * np.cos(np.radians(self.stagger))
         x2 = 0
         y2 = 0
         self.cambBezierX = [x1,x,x2]
@@ -237,72 +240,15 @@ class Airfoil2D:
 
 
     def match_le_thickness(self):
-        """Matches the second derivative by changing the thickness of the opposite side
-
-        Args:
-
-        Returns:
-            float: error in matching the second derivative
-
-        """
-        # Point that controls the thickness is index [1] 
-        x = np.zeros(3)
-        y = np.zeros(3)
-        xx = np.zeros(3)
-        yy = np.zeros(3)
-        t1 = 0.001
-        t2 = 0.002
-
-        x[0] = self.cambBezierX[0]
-        y[0]= self.cambBezierY[0]
-        [x[1], y[1]] = self.ssBezier.get_point(t1)   # Derivative on the suction side (Needs to match)
-        [x[2], y[2]] = self.ssBezier.get_point(t2)
-        dydx1 = derivative.derivative_2(x,y)
-        theta_ps = (self.alpha1 + 90) if self.left_to_right else (-self.alpha1)
-
-        def nest_ps_derivative2(h):
-            self.psBezierX[1] = self.psBezierX[0]+np.cos(np.radians(theta_ps))*h
-            self.psBezierY[1] = self.psBezierY[0]+np.sin(np.radians(theta_ps))*h
-            self.psBezier = bezier(self.psBezierX,self.psBezierY)
-            xx[0] = x[0]
-            yy[0] = y[0]
-            [xx[1],yy[1]] = self.psBezier.get_point(t1) # Gets the second derivative near the leading edge
-            [xx[2],yy[2]] = self.psBezier.get_point(t2)
-            dydx2 = derivative.derivative_2(xx,yy)
-            err = abs(dydx2[1] - dydx1[1])
-            return err
-
-        def nest_ss_derivative2(h:float) -> float:
-            self.ssBezierX[1] = self.ssBezierX[0]+np.cos(np.radians(theta_ps))*h
-            self.ssBezierY[1] = self.ssBezierY[0]+np.sin(np.radians(theta_ps))*h
-            self.ssBezier = bezier(self.ssBezierX,self.ssBezierY)
-            xx[0] = x[0]
-            yy[0] = y[0]
-            [xx[1],yy[1]] = self.ssBezier.get_point(0.001)
-            [xx[2],yy[2]] = self.ssBezier.get_point(0.002)
-            dydx2 = derivative.derivative_2(xx,yy)
-            err = abs(dydx2[1] - dydx1[1])
-            return err
-
-        if (not self._counter_rotation):
-            temp = minimize_scalar(nest_ps_derivative2,bounds=(0,self.le_thickness*30),method="bounded") 
-            h = temp.x # type: ignore
-            if (nest_ps_derivative2(h) > 1):
-                h = self.le_thickness
-
-            self.psBezierX[1] = self.psBezierX[0]+np.cos(np.radians(theta_ps))*h  # Changes the second point to match the second derivative at the leading edge 
-            self.psBezierY[1] = self.psBezierY[0]+np.sin(np.radians(theta_ps))*h
-            self.psBezier = bezier(self.psBezierX,self.psBezierY)
-        else:
-            h = minimize_scalar(nest_ss_derivative2,bounds=(0,self.le_thickness*30),method="bounded")
-            if (nest_ss_derivative2(h.x)>1): # type: ignore 
-                h = self.le_thickness
-
-            self.ssBezierX[1] = self.ssBezierX[0]+np.cos(np.radians(theta_ps))*h
-            self.ssBezierY[1] = self.ssBezierY[0]+np.sin(np.radians(theta_ps))*h
-            self.ssBezier = bezier(self.ssBezierX,self.ssBezierY)
+        """Matches the leading edge second derivative curvature. Convenience wrapper for match_thickness('LE')."""
+        self.match_thickness('LE')
     
     def te_create_reversible(self,thickness:float):
+        """Creates a reversible (rounded/blunt) trailing edge.
+
+        Args:
+            thickness (float): trailing edge thickness as a fraction of chord
+        """
         te_thickness = thickness*self.chord
 
         b = self.camberBezier
@@ -314,17 +260,13 @@ class Airfoil2D:
             theta = theta-90
         else:
             theta = theta+90
-        # self.ssBezierX.pop(); self.ssBezierY.pop()
-        # self.psBezierX.pop(); self.psBezierY.pop()
         self.ssBezierX[-2]=x-np.cos(np.radians(theta))*te_thickness
         self.ssBezierY[-2]=y-np.sin(np.radians(theta))*te_thickness
         
-        n = len(self.psBezierX)
         self.psBezierX[-2] = x+np.cos(np.radians(theta))*te_thickness
         self.psBezierY[-2] = y+np.sin(np.radians(theta))*te_thickness
         self.ssBezier = bezier(self.ssBezierX,self.ssBezierY)
         self.psBezier = bezier(self.psBezierX,self.psBezierY)
-        print('check')
         
     def te_create(self,radius:float,wedge_ss:float,wedge_ps:float):
         """Creates the trailing edge using a semi-circle
@@ -363,7 +305,6 @@ class Airfoil2D:
         xo = (y_wedge_ps-yc-m*x_wedge_ps+m2*xc)/(m2-m)
         yo = y_wedge_ps-m*(x_wedge_ps-xo)
         
-        # mc = (yo-y_wedge_ps)/(xo-x_wedge_ps) # Check
         self.psBezierX[-2] = xo # set the last bezier point on the pressure side such that it matches the slope of the TE Arc
         self.psBezierY[-2] = yo
         self.psBezierX[-1] = x_wedge_ps
@@ -394,7 +335,6 @@ class Airfoil2D:
         m = dydx1[0]
         xo = (y_wedge_ss-yc-m*x_wedge_ss+m2*xc)/(m2-m) # interception of the 2nd to last point
         yo = y_wedge_ss-m*(x_wedge_ss-xo)
-        # mc = (yo-y_wedge_ss)/(xo-x_wedge_ss) # Check
         self.ssBezierX[-2] = float(xo)
         self.ssBezierY[-2] = float(yo)
         self.ssBezierX[-1] = float(x_wedge_ss)
@@ -439,7 +379,7 @@ class Airfoil2D:
         """Add thickness to the pressure side 
 
         Args:
-            thicknessArray (List[float]): thickness along the suction side. Example: [0.2400, 0.2000, 0.1600, 0.1400]
+            thicknessArray (List[float]): thickness along the pressure side. Example: [0.2400, 0.2000, 0.1600, 0.1400]
             expansion_ratio (float, optional): determines the spacing of the thickness array from leading edge. Defaults to 1.2.
 
         """
@@ -481,7 +421,7 @@ class Airfoil2D:
         """Adds extra pitch by shifting the turbine blade over by a x direction
 
         Args:
-            x_pitch (float): [description]
+            x_pitch (float): amount to shift in the pitch direction
         """
         # Pitch_Add Adds pitch or shifts turbine by appropriate direction
         if self.left_to_right:
@@ -494,7 +434,7 @@ class Airfoil2D:
             
         Args:
             x (float): amount to shift the blade by in x direction
-            y (float): amount to shift the bade by in y direction 
+            y (float): amount to shift the blade by in y direction
         """
         cambBezierX = convert_to_ndarray(self.cambBezierX)
         cambBezierY = convert_to_ndarray(self.cambBezierY)
@@ -587,13 +527,13 @@ class Airfoil2D:
             self.TE_ss_arc.alpha_stop += angle
 
     def get_points(self,n:int=100) -> Tuple[npt.NDArray,npt.NDArray]:
-        """Get the airfoil points. This will you 100 poitns defining the suction side and pressure side
+        """Returns n points defining the suction side and pressure side.
 
         Args:
             n (int, optional): Number of points. Defaults to 100.
 
         Returns:
-            Tuple[npt.NDArray,npt.NDArray]: _description_
+            Tuple[npt.NDArray,npt.NDArray]: suction side and pressure side point arrays, each of shape (n, 2)
         """
         t = np.linspace(0,1,n)
         t_te = np.linspace(0,1,int(n*0.2))
@@ -629,14 +569,12 @@ class Airfoil2D:
         t = np.linspace(0,1,n)
         [x1,y1] = self.psBezier.get_point(t)
         [x2,y2] = self.ssBezier.get_point(t)
-        # [x3,y3] = self.TE_ss_arc.get_point(t)
-        # [x4,y4] = self.TE_ps_arc.get_point(t)
         xc = sum(x1+x2)/(2*n)
         yc = sum(y1+y2)/(2*n)
         return xc,yc
 
     def flip_cw(self):
-        # FLIP Flips the turbine from CCW to CW design
+        """Flips the airfoil from counter-clockwise (CCW) to clockwise (CW) design by mirroring across the X-axis."""
         xc = 0
         self.CCW = 0
         # Flip the Camber
@@ -652,7 +590,7 @@ class Airfoil2D:
         
         self.psBezier = bezier(self.psBezierX,self.psBezierY)
         
-        if (type(self.ssBezier) == 'pw_bezier2D'):
+        if isinstance(self.ssBezier, pw_bezier2D):
             for i in range(len(self.ssBezier.bezierArray)): # type: ignore
                 for j in range(len(self.ssBezier.bezierArray[i].x)): # type: ignore
                     dx =  xc - self.ssBezier.bezierArray[i].x[j] # type: ignore
@@ -673,8 +611,6 @@ class Airfoil2D:
         dx =  xc - self.TE_ps_arc.x
         self.TE_ps_arc.x = xc+dx
         
-        # ps_arc_start = self.TE_ps_arc.alpha_start
-        # ps_arc_stop = self.TE_ps_arc.alpha_stop
         self.TE_ps_arc.alpha_start = 180-self.TE_ps_arc.alpha_start
         self.TE_ps_arc.alpha_stop = -self.TE_ps_arc.alpha_stop+180
         self.TE_ss_arc.alpha_start = -self.TE_ss_arc.alpha_start-180
@@ -746,7 +682,7 @@ class Airfoil2D:
     def add_ss_flow_guidance(self,n:int=8):
         """This function straightens out the suction side by specifying n bezier control points instead of a straight line. 
 
-        Args:.
+        Args:
             n (int): number of control points, increase this to make straightening more aggressive. Defaults to 8.
             
         """
@@ -787,8 +723,7 @@ class Airfoil2D:
             upstream = (p < x1) if self.left_to_right else (q > y1)
             if upstream:
                 ssBezier_new.append((float(p),float(q)))
-                
-        # ssBezierY_new = [p for p in self.ssBezierY if p>y1]
+
         ssBezier_new.append((float(x1),float(y1))) # type: ignore
         ssBezier_new = np.array(ssBezier_new)
         
@@ -813,7 +748,6 @@ class Airfoil2D:
             None
         """
         tplot = np.linspace(0,1,50)
-        # plt.ion()
         marker_style = dict(markersize=8, markerfacecoloralt='tab:red')
 
         [xcamber, ycamber] = self.camberBezier.get_point(tplot)
@@ -831,7 +765,6 @@ class Airfoil2D:
             None
         """
         t = np.linspace(0,1,200)
-        # plt.ion()
         [xcamber, ycamber] = self.camberBezier.get_point(t)
         [xPS, yPS] = self.psBezier.get_point(t)
         [xSS, ySS] = self.ssBezier.get_point(t)
@@ -877,7 +810,7 @@ class Airfoil2D:
             pitchChordRatio (float): pitch to chord ratio (spacing between airfoils relative to the chord)
 
         Returns:
-            plt.figure: [description]
+            plt.figure: matplotlib figure containing the channel plot
         """
         
         # outputs the Area/A*

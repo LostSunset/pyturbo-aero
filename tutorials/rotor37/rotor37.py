@@ -71,34 +71,39 @@ for i,f in enumerate(files):
 nspan = 100
 R37 = Airfoil3D([],[],0)
 R37.b3 = bezier3(cx,cy,cz)
-R37.shft_xss = np.zeros(shape=(nspan,151))
-R37.shft_yss = np.zeros(shape=(nspan,151))
-
-R37.shft_xps = np.zeros(shape=(nspan,151))
-R37.shft_yps = np.zeros(shape=(nspan,151))
-
-R37.shft_zss = np.zeros(shape=(nspan,151))
-R37.shft_zps = np.zeros(shape=(nspan,151))
+R37.shft_ss = np.zeros(shape=(nspan,151,3))
+R37.shft_ps = np.zeros(shape=(nspan,151,3))
 
 for i in range(151):        # Lets get a higher resolution airfoil
     z = np.linspace(zss[0,i],zss[-1,i],nspan)
-    R37.shft_xss[:,i]= csapi(zss[:,i],xss[:,i],z)
-    R37.shft_yss[:,i]= csapi(zss[:,i],yss[:,i],z)
-    R37.shft_zss[:,i]= z
-    
-    z = np.linspace(zps[0,i],zps[-1,i],nspan)
-    R37.shft_xps[:,i]= csapi(zps[:,i],xps[:,i],z)
-    R37.shft_yps[:,i]= csapi(zps[:,i],yps[:,i],z)
-    R37.shft_zps[:,i]= z
+    R37.shft_ss[:,i,0] = csapi(zss[:,i],xss[:,i],z)
+    R37.shft_ss[:,i,1] = csapi(zss[:,i],yss[:,i],z)
+    R37.shft_ss[:,i,2] = z
 
-R37.control_x_ss = xss
-R37.control_y_ss = yss
-R37.control_x_ps = xps
-R37.control_y_ps = yps
-R37.xss = copy.deepcopy(R37.shft_xss)
-R37.yss = copy.deepcopy(R37.shft_yss)
-R37.xps = copy.deepcopy(R37.shft_xps)
-R37.yps = copy.deepcopy(R37.shft_yps)
+    z = np.linspace(zps[0,i],zps[-1,i],nspan)
+    R37.shft_ps[:,i,0] = csapi(zps[:,i],xps[:,i],z)
+    R37.shft_ps[:,i,1] = csapi(zps[:,i],yps[:,i],z)
+    R37.shft_ps[:,i,2] = z
+
+# Build control_ss and control_ps as 3D arrays (nfiles, npts, 3)
+R37.control_ss = np.zeros((len(files),151,3))
+R37.control_ps = np.zeros((len(files),151,3))
+R37.control_ss[:,:,0] = xss
+R37.control_ss[:,:,1] = yss
+R37.control_ss[:,:,2] = zss
+R37.control_ps[:,:,0] = xps
+R37.control_ps[:,:,1] = yps
+R37.control_ps[:,:,2] = zps
+
+# Build centroid-based stacking bezier
+centroid = np.hstack([cx, cy, cz])
+R37.stack_bezier_ctrl_pts = centroid
+R37.stack_bezier = bezier3(centroid[:,0], centroid[:,1], centroid[:,2])
+
+R37.ss = copy.deepcopy(R37.shft_ss)
+R37.ps = copy.deepcopy(R37.shft_ps)
+R37.zz = R37.shft_ss[:,0,2]
+R37.te_center = None
 R37.bImportedBlade = True
 R37.stackType=2 # Centroid
 R37.span = max(z)-min(z)

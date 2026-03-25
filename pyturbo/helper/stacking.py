@@ -9,3 +9,4 @@ class StackType(enum.Enum):
     leading_edge = 1
     centroid = 2
     trailing_edge = 3
+    none = 4

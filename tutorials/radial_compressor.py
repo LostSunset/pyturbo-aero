@@ -142,7 +142,7 @@ if __name__ == '__main__':
     cen.add_profile(hub)
     cen.add_profile(mid)
     cen.add_profile(tip)
-    # cen.add_splitter([hub, mid, tip], splitter_start=0.5)
+    cen.add_splitter([hub, mid, tip], splitter_start=0.5)
 
     cen.build(npts_span=10, npts_chord=100, nblades=nblades)
 

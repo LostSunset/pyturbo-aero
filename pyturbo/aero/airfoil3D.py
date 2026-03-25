@@ -181,7 +181,20 @@ class Airfoil3D:
                     hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
-                
+
+            elif (stackType == StackType.none):
+                # No shift — profiles stay where the user placed them.
+                # Compute centroid spline through actual profile centroids so lean/sweep still work.
+                for i in range(len(self.profileArray)):
+                    x, y = self.profileArray[i].get_centroid()
+                    stack_bezier_ctrl_pts[i,0] = x
+                    stack_bezier_ctrl_pts[i,1] = y
+                    stack_bezier_ctrl_pts[i,2] = self.profileSpan[i] * self.span
+
+                    hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
+                    te_center[i,0] = float(hx_te)
+                    te_center[i,1] = float(hy_te)
+
             self.stack_bezier_ctrl_pts = stack_bezier_ctrl_pts
             self.stack_bezier = bezier3(stack_bezier_ctrl_pts[:,0],stack_bezier_ctrl_pts[:,1],stack_bezier_ctrl_pts[:,2])
             self.bImportedBlade = False
@@ -675,12 +688,12 @@ class Airfoil3D:
 
             # Shift the stack_bezier to align with the stacking 
             x = bx[i]; y = by[i]
-            if (self.stackType == StackType.centroid):
+            if (self.stackType == StackType.centroid or self.stackType == StackType.none):
                 sx = cx[i]; sy = cy[i]
             elif (self.stackType == StackType.leading_edge):
                 sx = ps[i,0,0]
                 sy = ps[i,0,1]
-            else: # (self.stackType == StackType.trailing_edge)
+            else:  # trailing_edge
                 sx = 0
                 sy = 0
 
