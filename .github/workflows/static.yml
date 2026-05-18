@@ -37,6 +37,7 @@ jobs:
       - name: Run tests
         run: |
           MPLBACKEND=Agg python tests/test_centrif_compressor.py
+          MPLBACKEND=Agg python -m pytest tests/aero_design_test.py -x -q
 
   deploy:
     needs: test

@@ -6,6 +6,7 @@ class StackType(enum.Enum):
     Args:
         enum (enum.Emum): inherits enum
     """
-    leading_edge = 1
-    centroid = 2
-    trailing_edge = 3
+    Leading_Edge = 1
+    Centroid = 2
+    Trailing_Edge = 3
+    None_ = 4

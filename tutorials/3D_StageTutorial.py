@@ -54,7 +54,7 @@ stator_tip.add_ss_flow_guidance_2(s_c=0.75,n=10)
 # stator_tip.plot2D()
 
 stator3D = Airfoil3D(profileArray=[stator_hub,stator_mid,stator_tip], profile_loc=[0.0,0.5,1.0], height = 0.04)
-stator3D.stack(StackType.centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+stator3D.stack(StackType.Centroid) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 stator3D.add_sweep(sweep_y=[0,-0.05,0.01], sweep_z=[0.0, 0.5, 1]) # Z =1 is blade tip, Z = 0 is blade hub. The units are in percentage
 stator3D.add_lean(leanX=[0,0.1,0.05], leanZ=[0,0.5,1])
 stator3D.build(nProfiles=20,num_points=160,trailing_edge_points=20)
@@ -110,7 +110,7 @@ rotor_tip.add_ss_flow_guidance_2(s_c=0.7,n=10)
 
 #%% Rotor 3D
 rotor3D = Airfoil3D(profileArray=[rotor_hub,rotor_mid,rotor_tip],profile_loc=[0.0,0.5,1.0], height = 0.04)
-rotor3D.stack(StackType.trailing_edge) # stators are typically stacked with leading edge; stators with centroid or trailing edge
+rotor3D.stack(StackType.Trailing_Edge) # stators are typically stacked with leading edge; stators with centroid or trailing edge
 # rotor3D.add_sweep(sweep_y=[0,-0.02,0.02], sweep_z=[0.0, 0.5, 1]) # Z =1 is blade tip, Z = 0 is blade hub. The units are in percentage
 # rotor3D.add_lean(leanX=[0,0.01,-0.02],leanZ=[0,0.5,1])
 rotor3D.build(nProfiles=20,num_points=60,trailing_edge_points=20)

@@ -9,12 +9,12 @@ class TestDesign(unittest.TestCase):
     def test_2D_stator(self):
         # stator_hub = Airfoil2D(alpha1=0,alpha2=72,axial_chord=0.038,stagger=58)
         
-        # stator_hub.le_thickness_add(0.08)
+        # stator_hub.add_le_thickness(0.08)
         # ps_height = [0.0500,0.0200,-0.0100]
-        # stator_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2)
+        # stator_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2)
 
         # ss_height=[0.2400, 0.2600, 0.2200, 0.1800]
-        # stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        # stator_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
         # stator_hub.match_le_thickness()
         # stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
 
@@ -32,12 +32,12 @@ class TestDesign(unittest.TestCase):
     def test_2D_rotor(self):
         # rotor_hub = Airfoil2D(alpha1=40,alpha2=60,axial_chord=5.119,stagger=20)
         
-        # rotor_hub.le_thickness_add(0.08)
+        # rotor_hub.add_le_thickness(0.08)
         # ps_height = [-0.0500,-0.0200,-0.0100]
-        # rotor_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2)
+        # rotor_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2)
 
         # ss_height=[0.20, 0.200, 0.18, 0.18]
-        # rotor_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        # rotor_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
         # rotor_hub.match_le_thickness()
         # rotor_hub.te_create(radius=0.1,wedge_ss=2.5,wedge_ps=2.4)
 
@@ -49,13 +49,13 @@ class TestDesign(unittest.TestCase):
     def test_3D_Stator(self):
         # Hub Geometry
         stator_hub = Airfoil2D(alpha1=0,alpha2=72,axial_chord=0.038,stagger=58)
-        stator_hub.le_thickness_add(0.04)
+        stator_hub.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
         ps_height = [0.0500,0.0200,-0.0100]
-        stator_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2) 
+        stator_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2) 
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
@@ -63,14 +63,14 @@ class TestDesign(unittest.TestCase):
 
         # Tip Geometry
         stator_tip = Airfoil2D(alpha1=5,alpha2=72,axial_chord=0.036,stagger=56)
-        stator_tip.le_thickness_add(0.04)
+        stator_tip.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
         ps_height_loc = exp_ratio(1.2,len(ps_height)+2,0.95)
         ps_height_loc = np.append(ps_height_loc,[1])
-        stator_tip.ps_thickness_add(thicknessArray=ps_height,camberPercent=ps_height_loc)
+        stator_tip.add_ps_thickness(thicknessArray=ps_height,camberPercent=ps_height_loc)
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_tip.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
@@ -79,7 +79,7 @@ class TestDesign(unittest.TestCase):
         plt.close('all')
         # Begin 3D design
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.centroid)
+        stator3D.stack(StackType.Centroid)
         # stator3D.add_lean([0, 0.05, 1], [0,0.5,1])
         stator3D.build(100,80,20)
         fig = stator3D.plot3D()
@@ -92,12 +92,12 @@ class TestDesign(unittest.TestCase):
         '''
         # Hub Geometry
         stator_hub = Airfoil2D(alpha1=0,alpha2=72,axial_chord=0.038,stagger=58)
-        stator_hub.le_thickness_add(0.04)
+        stator_hub.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
-        stator_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2) 
+        stator_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2) 
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
@@ -106,12 +106,12 @@ class TestDesign(unittest.TestCase):
 
         # Tip Geometry
         stator_tip = Airfoil2D(alpha1=5,alpha2=72,axial_chord=0.036,stagger=56)
-        stator_tip.le_thickness_add(0.04)
+        stator_tip.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
-        stator_tip.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2)
+        stator_tip.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2)
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_tip.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
@@ -120,7 +120,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.build(100,100,20)
         # stator3D.plot3D()
@@ -182,14 +182,14 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         # stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        # stator3D.stack(StackType.trailing_edge)
+        # stator3D.stack(StackType.Trailing_Edge)
         # stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         # stator3D.build(100,100,20)
         # stator3D.plot3D()
 
         # Wavy Geometry
         stator3D_wavy = AirfoilWavy([stator_hub,stator_tip],[0,1],span)
-        stator3D_wavy.stack(StackType.trailing_edge)
+        stator3D_wavy.stack(StackType.Trailing_Edge)
         stator3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D_wavy.build(100,100,20)
         stator3D_wavy.spanwise_spline_fit()
@@ -246,7 +246,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D_wavy = AirfoilWavy([stator_hub,stator_tip],[0,1],0.05)
-        stator3D_wavy.stack(StackType.trailing_edge)
+        stator3D_wavy.stack(StackType.Trailing_Edge)
         stator3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D_wavy.build(100,100,20)
         stator3D_wavy.plot3D()
@@ -316,7 +316,7 @@ class TestDesign(unittest.TestCase):
         # Begin 3D design
         span = 0.05
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],0.05)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.create_blade(100,100,20)
         # stator3D.plot3D()
@@ -331,12 +331,12 @@ class TestDesign(unittest.TestCase):
         # Stator Hub Geometry
         cax_stator = 0.038
         stator_hub = Airfoil2D(alpha1=0,alpha2=72,axial_chord=cax_stator,stagger=58)
-        stator_hub.le_thickness_add(0.04)
+        stator_hub.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
-        stator_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2) 
+        stator_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2) 
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_hub.match_le_thickness()
@@ -345,12 +345,12 @@ class TestDesign(unittest.TestCase):
 
         # Stator Tip Geometry
         stator_tip = Airfoil2D(alpha1=5,alpha2=72,axial_chord=0.036,stagger=56)
-        stator_tip.le_thickness_add(0.04)
+        stator_tip.add_le_thickness(0.04)
         ps_height = [0.0500,0.0200,-0.0100]
-        stator_tip.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2)
+        stator_tip.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2)
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        stator_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        stator_tip.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         stator_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         stator_tip.match_le_thickness()
@@ -359,7 +359,7 @@ class TestDesign(unittest.TestCase):
         # Begin Stator 3D design
         stator_span = cax_stator
         stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],stator_span)
-        stator3D.stack(StackType.trailing_edge)
+        stator3D.stack(StackType.Trailing_Edge)
         stator3D.add_lean([0, 0.05, 0], [0,0.5,1])
         stator3D.build(100,100,20)
         # stator3D.plot3D()
@@ -367,12 +367,12 @@ class TestDesign(unittest.TestCase):
         # Rotor Hub Geometry
         cax_rotor_hub = stator_span
         rotor_hub = Airfoil2D(alpha1=30,alpha2=72,axial_chord=cax_rotor_hub,stagger=40)
-        rotor_hub.le_thickness_add(0.04)
+        rotor_hub.add_le_thickness(0.04)
         ps_height = [0.0500,0.01,0.05]
-        rotor_hub.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2) 
+        rotor_hub.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2) 
 
         ss_height=[0.3, 0.25, 0.20, 0.25]
-        rotor_hub.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        rotor_hub.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         rotor_hub.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         rotor_hub.match_le_thickness()
@@ -381,12 +381,12 @@ class TestDesign(unittest.TestCase):
 
         # Rotor Tip Geometry
         rotor_tip = Airfoil2D(alpha1=30,alpha2=72,axial_chord=0.036,stagger=45)
-        rotor_tip.le_thickness_add(0.04)
+        rotor_tip.add_le_thickness(0.04)
         ps_height = [0.0500,0.01,0.05]
-        rotor_tip.ps_thickness_add(thicknessArray=ps_height,expansion_ratio=1.2)
+        rotor_tip.add_ps_thickness(thicknessArray=ps_height,expansion_ratio=1.2)
 
         ss_height=[0.2400, 0.2000, 0.1600, 0.1400]
-        rotor_tip.ss_thickness_add(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
+        rotor_tip.add_ss_thickness(thicknessArray=ss_height,camberPercent=0.8,expansion_ratio=1.2)
 
         rotor_tip.te_create(radius=0.001,wedge_ss=2.5,wedge_ps=2.4)
         rotor_tip.match_le_thickness()
@@ -395,7 +395,7 @@ class TestDesign(unittest.TestCase):
         # Begin Rotor 3D design
         rotor_span = 0.05
         rotor3D_wavy = AirfoilWavy([rotor_hub,rotor_tip],[0,1],rotor_span)
-        rotor3D_wavy.stack(StackType.trailing_edge)
+        rotor3D_wavy.stack(StackType.Trailing_Edge)
         rotor3D_wavy.add_lean([0, 0.05, 0], [0,0.5,1])
         rotor3D_wavy.build(100,100,20)
         rotor3D_wavy.flip_cw()

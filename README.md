@@ -1,15 +1,28 @@
 # Introduction
 PyTurbo is a Full 2D to 3D Turbomachinery blade and passage generation tool. Designs are generated and blade profiles are exported to json format.
 
-## Installation 
-Installation from pip
-> `pip install pyturbo-aero`
+## Installation
 
-Installation from source
-> `python setup.py install`
+Installation from pip:
+```bash
+pip install pyturbo-aero
+```
 
-Importing the python package after installing
-> `from pyturbo.aero import Airfoil2D, Airfoil3D, Centrif`
+Installation from source using Poetry:
+```bash
+pip install poetry
+poetry install
+```
+
+Installation from source using pip:
+```bash
+pip install .
+```
+
+Importing the python package after installing:
+```python
+from pyturbo.aero import Airfoil2D, Airfoil3D, Centrif
+```
 
 [Link to documentation](https://nasa.github.io/pyturbo-aero)
 
