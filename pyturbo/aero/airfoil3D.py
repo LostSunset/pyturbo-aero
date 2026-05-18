@@ -550,13 +550,17 @@ class Airfoil3D:
                     f.write("{0:08f} {1:08f} {2:08f}\n".format(x[k],y[k],self.zz[j])) # Number of sections
 
     def plot3D(self,only_blade=False):
-        """Plots a 3D representation of the blade and control points trailing edge center line is also plotted along with the blade's stacking spine
+        """Plots a 3D representation of the blade and control points.
+
+        Trailing edge center line is also plotted along with the blade's
+        stacking spine.
 
         Args:
             only_blade (bool, optional): Only plot the blade, no stacking spine. Defaults to False.
 
         Returns:
-            (matplotlib.figure): figure object (fig.show())
+            matplotlib.figure.Figure: The figure object. Caller can ``fig.show()``,
+                ``fig.savefig(...)``, or pass it to ``plt.close(fig)`` when done.
         """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -597,7 +601,7 @@ class Airfoil3D:
         ax.set_ylabel("y")
         ax.set_zlabel("z") # type: ignore
         plt.axis('equal')
-        plt.show()
+        return fig
 
     def nblades(self,pitchChord:float,rhub:float):
         """Calculates the number of blades given a pitch-to-chord ratio

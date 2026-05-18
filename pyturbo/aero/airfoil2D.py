@@ -342,15 +342,16 @@ class Airfoil2D:
         b = bezier(self.ssBezierX,self.ssBezierY)
         self.ssBezier = b
     
-    def add_ss_thickness(self,thicknessArray:List[float],camberPercent:float=0.8,expansion_ratio:float=1.2):
-        """Adds thickness to the suction side by specifying bezier control points 
+    def add_ss_thickness(self,thicknessArray:List[float],camberPercent:float=0.8,expansion_ratio:float=1.2,aft_loaded:bool=False):
+        """Adds thickness to the suction side by specifying bezier control points
 
         Args:
             thicknessArray (List[float]): thickness along the suction side. Example: [0.2400, 0.2000, 0.1600, 0.1400]
             camberPercent (float, optional): Percent camber where straightening of the suction side happens. Defaults to 1.
             expansion_ratio (float, optional): If thickness location is specified then this is not necessary otherwise thickness_loc is calculated by the expansion ratio. Defaults to 1.2.
+            aft_loaded (bool, optional): If True, cluster thickness control points near the trailing edge (compressor-style aft-loaded). If False, cluster near the leading edge (turbine-style front-loaded). Defaults to False.
         """
-        t = exp_ratio(expansion_ratio,len(thicknessArray)+2,camberPercent)
+        t = exp_ratio(expansion_ratio,len(thicknessArray)+2,camberPercent,flip_direction=aft_loaded)
         t = np.insert(t,0,0)
         t = convert_to_ndarray(np.append(t,[1]))
         self.SS_thickness = convert_to_ndarray(thicknessArray)
@@ -375,18 +376,20 @@ class Airfoil2D:
         self.ssBezier = bezier(self.ssBezierX,self.ssBezierY)
 
     # Adds thickness to pressure side
-    def add_ps_thickness(self,thicknessArray:List[float],expansion_ratio:float=1.2,camberPercent:float=0.95):
-        """Add thickness to the pressure side 
+    def add_ps_thickness(self,thicknessArray:List[float],expansion_ratio:float=1.2,camberPercent:float=0.95,aft_loaded:bool=False):
+        """Add thickness to the pressure side
 
         Args:
             thicknessArray (List[float]): thickness along the pressure side. Example: [0.2400, 0.2000, 0.1600, 0.1400]
             expansion_ratio (float, optional): determines the spacing of the thickness array from leading edge. Defaults to 1.2.
+            camberPercent (float, optional): Percent camber over which the thickness points are distributed. Defaults to 0.95.
+            aft_loaded (bool, optional): If True, cluster thickness control points near the trailing edge (compressor-style aft-loaded). If False, cluster near the leading edge (turbine-style front-loaded). Defaults to False.
 
         """
         # 3 Extra points is added to account for the Leading Edge being
         # computed and last 2 are for the trailing edge
-       
-        t = exp_ratio(expansion_ratio,len(thicknessArray)+2,camberPercent)
+
+        t = exp_ratio(expansion_ratio,len(thicknessArray)+2,camberPercent,flip_direction=aft_loaded)
         t = np.insert(t,0,0)
         t = convert_to_ndarray(np.append(t,[1]))
         self.PS_thickness = -1*np.array(thicknessArray)
@@ -742,27 +745,29 @@ class Airfoil2D:
         
         
     def plot_camber(self):
-        """Plots the camber of the airfoil
-        
+        """Plots the camber of the airfoil.
+
         Returns:
-            None
+            matplotlib.figure.Figure: The figure object. Caller can ``fig.show()``,
+                ``fig.savefig(...)``, or pass it to ``plt.close(fig)`` when done.
         """
         tplot = np.linspace(0,1,50)
         marker_style = dict(markersize=8, markerfacecoloralt='tab:red')
 
         [xcamber, ycamber] = self.camberBezier.get_point(tplot)
         fig = plt.figure(num=1, clear=True)
-        plt.plot(xcamber,ycamber, color='black', linestyle='solid', 
+        plt.plot(xcamber,ycamber, color='black', linestyle='solid',
             linewidth=2)
         plt.plot(self.camberBezier.x,self.camberBezier.y, color='red', marker='o',linestyle='--',**marker_style)         # type: ignore
         plt.gca().set_aspect('equal')
-        plt.show()
+        return fig
 
     def plot2D(self):
-        """Plots the airfoil
+        """Plots the airfoil.
 
         Returns:
-            None
+            matplotlib.figure.Figure: The figure object. Caller can ``fig.show()``,
+                ``fig.savefig(...)``, or pass it to ``plt.close(fig)`` when done.
         """
         t = np.linspace(0,1,200)
         [xcamber, ycamber] = self.camberBezier.get_point(t)
@@ -801,7 +806,7 @@ class Airfoil2D:
             [x, y] = self.TE_ss_arc.get_point(t)
             plt.plot(x,y, color='red', linestyle='solid')
         plt.gca().set_aspect('equal')
-        plt.show()
+        return fig
 
     def plot2D_channel(self,pitchChordRatio:float):
         """plots the 2D airfoil in a channel with another airfoil given a pitch to chord ratio
