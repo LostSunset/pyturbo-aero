@@ -98,18 +98,18 @@ class Airfoil3D:
         self.IsSplineFitted = False
         self.IsSplineFittedShell = False
 
-    def stack(self, stackType=StackType.centroid):
+    def stack(self, stackType=StackType.Centroid):
         """Each airfoil profile is stacked on top of each other based on the leading edge, trailing edge, or centroid
 
         Args:
-            stackType (StackType, optional): Options are centroid, Leading Edge, Trailing Edge. Defaults to StackType.centroid.
+            stackType (StackType, optional): Options are centroid, Leading Edge, Trailing Edge. Defaults to StackType.Centroid.
         """
         stack_bezier_ctrl_pts = np.zeros((len(self.profileArray),3))
         self.stackType = stackType
         te_center = np.zeros((len(self.profileArray),3))
         if (len(self.profileArray) >= 2):
             # Stack the airfoils about LE
-            if (stackType == StackType.leading_edge):
+            if (stackType == StackType.Leading_Edge):
                 hub = self.profileArray[0]
                 hx, hy = hub.camberBezier.get_point(0)
                 stack_bezier_ctrl_pts[0,0] = float(hx)
@@ -134,7 +134,7 @@ class Airfoil3D:
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
             # Stack the airfoils about TE
-            elif (stackType == StackType.trailing_edge):
+            elif (stackType == StackType.Trailing_Edge):
                 hub = self.profileArray[0]
                 hx, hy = hub.camberBezier.get_point(1)
                 stack_bezier_ctrl_pts[0,0] = float(hx)
@@ -158,7 +158,7 @@ class Airfoil3D:
                     hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
-            elif (stackType == StackType.centroid):
+            elif (stackType == StackType.Centroid):
                 hx, hy = self.profileArray[0].get_centroid()
                 stack_bezier_ctrl_pts[0,0] = hx
                 stack_bezier_ctrl_pts[0,1] = hy
@@ -181,7 +181,20 @@ class Airfoil3D:
                     hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
                     te_center[i,0] = float(hx_te)
                     te_center[i,1] = float(hy_te)
-                
+
+            elif (stackType == StackType.None_):
+                # No shift — profiles stay where the user placed them.
+                # Compute centroid spline through actual profile centroids so lean/sweep still work.
+                for i in range(len(self.profileArray)):
+                    x, y = self.profileArray[i].get_centroid()
+                    stack_bezier_ctrl_pts[i,0] = x
+                    stack_bezier_ctrl_pts[i,1] = y
+                    stack_bezier_ctrl_pts[i,2] = self.profileSpan[i] * self.span
+
+                    hx_te, hy_te = self.profileArray[i].camberBezier.get_point(1)
+                    te_center[i,0] = float(hx_te)
+                    te_center[i,1] = float(hy_te)
+
             self.stack_bezier_ctrl_pts = stack_bezier_ctrl_pts
             self.stack_bezier = bezier3(stack_bezier_ctrl_pts[:,0],stack_bezier_ctrl_pts[:,1],stack_bezier_ctrl_pts[:,2])
             self.bImportedBlade = False
@@ -360,7 +373,21 @@ class Airfoil3D:
             self.shft_ss[i,:,0] += x
             self.shft_ps[i,:,1] += y
             self.shft_ps[i,:,0] += x
-    
+
+        self.control_ss[:,:,0] += x
+        self.control_ss[:,:,1] += y
+        self.control_ps[:,:,0] += x
+        self.control_ps[:,:,1] += y
+
+        self.stack_bezier_ctrl_pts[:,0] += x
+        self.stack_bezier_ctrl_pts[:,1] += y
+        self.stack_bezier.x = self.stack_bezier.x + x
+        self.stack_bezier.y = self.stack_bezier.y + y
+
+        if self.te_center is not None:
+            self.te_center[:,0] += x
+            self.te_center[:,1] += y
+
     def flip_le_te(self):
         """
         Flip a stack of airfoils (suction and pressure sides) about their centroids,
@@ -384,15 +411,14 @@ class Airfoil3D:
 
             # Original leading and trailing edge
             leading_edge = ss[0]
-            trailing_edge = ss[-1]
 
             # Centroid of entire airfoil section
             n_total = len(ss) + len(ps)
-            centroid = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
+            cent = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
 
             # Reflect both sides through the centroid
-            flipped_ss_i = 2 * centroid - ss
-            flipped_ps_i = 2 * centroid - ps
+            flipped_ss_i = 2 * cent - ss
+            flipped_ps_i = 2 * cent - ps
 
             # Translate so flipped trailing edge lands on original leading edge
             flipped_trailing = flipped_ss_i[-1]
@@ -400,23 +426,67 @@ class Airfoil3D:
 
             flipped_ss[i] = flipped_ss_i + translation
             flipped_ps[i] = flipped_ps_i + translation
-        
+
         self.shft_ps = flipped_ps
         self.shft_ss = flipped_ss
+
+        # Flip control profiles the same way
+        M_ctrl = self.control_ss.shape[0]
+        flipped_ctrl_ss = np.empty_like(self.control_ss)
+        flipped_ctrl_ps = np.empty_like(self.control_ps)
+        for i in range(M_ctrl):
+            css = self.control_ss[i]
+            cps = self.control_ps[i]
+            leading_edge = css[0]
+            n_total = len(css) + len(cps)
+            cent = (np.sum(css, axis=0) + np.sum(cps, axis=0)) / n_total
+            flipped_css = 2 * cent - css
+            flipped_cps = 2 * cent - cps
+            flipped_trailing = flipped_css[-1]
+            translation = leading_edge - flipped_trailing
+            flipped_ctrl_ss[i] = flipped_css + translation
+            flipped_ctrl_ps[i] = flipped_cps + translation
+        self.control_ss = flipped_ctrl_ss
+        self.control_ps = flipped_ctrl_ps
+
+        # Flip spine control points: reflect about their mean, then translate
+        spine_cent = np.mean(self.stack_bezier_ctrl_pts, axis=0)
+        self.stack_bezier_ctrl_pts = 2 * spine_cent - self.stack_bezier_ctrl_pts
+        self.stack_bezier.x = 2 * np.mean(self.stack_bezier.x) - self.stack_bezier.x
+        self.stack_bezier.y = 2 * np.mean(self.stack_bezier.y) - self.stack_bezier.y
+
+        # Flip trailing edge centers
+        if self.te_center is not None:
+            for i in range(M):
+                ss = flipped_ss[i]
+                ps = flipped_ps[i]
+                n_total = len(ss) + len(ps)
+                cent = (np.sum(ss, axis=0) + np.sum(ps, axis=0)) / n_total
+                self.te_center[i] = 2 * cent - self.te_center[i]
 
     def flip_x(self):
         """Mirrors the blade by multiplying -1*x direction. This is assuming axial chord is in the y direction and span is in z
         """
         self.shft_ps[:,:,0] *= -1
         self.shft_ss[:,:,0] *= -1
-        self.control_ps[:,:,0] *= -1 
-        self.control_ss[:,:,0] *= -1 
+        self.control_ps[:,:,0] *= -1
+        self.control_ss[:,:,0] *= -1
+        self.stack_bezier_ctrl_pts[:,0] *= -1
+        self.stack_bezier.x = -self.stack_bezier.x
+        if self.te_center is not None:
+            self.te_center[:,0] *= -1
 
     def flip_y(self):
         """Mirrors the blade by multiplying y direction by -1. This is assuming axial chord is in the y direction and span is in z
         """
         self.shft_ps[:,:,1] = -1*self.shft_ps[:,:,1]
         self.shft_ss[:,:,1] = -1*self.shft_ss[:,:,1]
+        self.control_ps[:,:,1] *= -1
+        self.control_ss[:,:,1] *= -1
+        self.stack_bezier_ctrl_pts[:,1] *= -1
+        self.stack_bezier.y = -self.stack_bezier.y
+        if self.te_center is not None:
+            self.te_center[:,1] *= -1
 
     def section_z(self,zStartPercent:float,zEndPercent:float):
         """Chops the blade in between 2 spanwise lines. Think of it as cutting the blade between (zStartPercent) 10% and (zEndPercent) 50%
@@ -480,13 +550,17 @@ class Airfoil3D:
                     f.write("{0:08f} {1:08f} {2:08f}\n".format(x[k],y[k],self.zz[j])) # Number of sections
 
     def plot3D(self,only_blade=False):
-        """Plots a 3D representation of the blade and control points trailing edge center line is also plotted along with the blade's stacking spine
+        """Plots a 3D representation of the blade and control points.
+
+        Trailing edge center line is also plotted along with the blade's
+        stacking spine.
 
         Args:
             only_blade (bool, optional): Only plot the blade, no stacking spine. Defaults to False.
 
         Returns:
-            (matplotlib.figure): figure object (fig.show())
+            matplotlib.figure.Figure: The figure object. Caller can ``fig.show()``,
+                ``fig.savefig(...)``, or pass it to ``plt.close(fig)`` when done.
         """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -527,7 +601,7 @@ class Airfoil3D:
         ax.set_ylabel("y")
         ax.set_zlabel("z") # type: ignore
         plt.axis('equal')
-        plt.show()
+        return fig
 
     def nblades(self,pitchChord:float,rhub:float):
         """Calculates the number of blades given a pitch-to-chord ratio
@@ -551,6 +625,38 @@ class Airfoil3D:
         # max_axial_chord = max(axial_chord)
         # avg_axial_chord = np.mean(axial_chord)
         return chord,axial_chord
+
+    def get_cross_sectional_area(self, profile_index: int) -> float:
+        """Compute 2D cross-sectional area of a blade profile at a given span index.
+
+        Uses the shoelace formula on the closed polygon formed by concatenating
+        the suction side and the reversed pressure side points.
+
+        Args:
+            profile_index (int): spanwise profile index (0 to nspan-1)
+
+        Returns:
+            float: cross-sectional area in the x-y plane at this span
+        """
+        x = np.concatenate([self.shft_ss[profile_index, :, 0],
+                            np.flip(self.shft_ps[profile_index, :, 0])])
+        y = np.concatenate([self.shft_ss[profile_index, :, 1],
+                            np.flip(self.shft_ps[profile_index, :, 1])])
+        return 0.5 * abs(float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))))
+
+    def get_blade_volume(self) -> float:
+        """Compute blade volume by integrating 2D cross-sectional areas over span.
+
+        Uses the trapezoidal rule with z (spanwise) coordinates at the leading edge
+        of each profile section.
+
+        Returns:
+            float: blade volume
+        """
+        nprofiles = self.shft_ss.shape[0]
+        areas = np.array([self.get_cross_sectional_area(i) for i in range(nprofiles)])
+        z = self.shft_ss[:, 0, 2]  # spanwise coordinate at LE of each profile
+        return float(np.trapezoid(areas, z))
 
     def get_pitch(self,nBlades:int):
         """Get the pitch distribution for a 3D blade row
@@ -586,12 +692,12 @@ class Airfoil3D:
 
             # Shift the stack_bezier to align with the stacking 
             x = bx[i]; y = by[i]
-            if (self.stackType == StackType.centroid):
+            if (self.stackType == StackType.Centroid or self.stackType == StackType.None_):
                 sx = cx[i]; sy = cy[i]
-            elif (self.stackType == StackType.leading_edge):
+            elif (self.stackType == StackType.Leading_Edge):
                 sx = ps[i,0,0]
                 sy = ps[i,0,1]
-            else: # (self.stackType == StackType.trailing_edge)
+            else:  # trailing_edge
                 sx = 0
                 sy = 0
 
@@ -753,7 +859,7 @@ class Airfoil3D:
             Fits the blade with splines that run along the profiles
             Helps with the wavy design
         """
-        [nprofiles,npts] = self.shft_ps.shape
+        [nprofiles,npts,_] = self.shft_ps.shape
         self.spline_xps = []
         self.spline_yps = []
         self.spline_zps = []
@@ -1036,7 +1142,23 @@ class Airfoil3D:
             self.control_ps[i,:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
             self.control_ps[i,:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
+        # Rotate stacking spine control points
+        dx = self.stack_bezier_ctrl_pts[:,0] - cx
+        dy = self.stack_bezier_ctrl_pts[:,1] - cy
+        self.stack_bezier_ctrl_pts[:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
+        self.stack_bezier_ctrl_pts[:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
+        dx = self.stack_bezier.x - cx
+        dy = self.stack_bezier.y - cy
+        self.stack_bezier.x = (dx*cosd(angle) - dy*sind(angle)) + cx
+        self.stack_bezier.y = (dx*sind(angle) + dy*cosd(angle)) + cy
+
+        # Rotate trailing edge centers
+        if self.te_center is not None:
+            dx = self.te_center[:,0] - cx
+            dy = self.te_center[:,1] - cy
+            self.te_center[:,0] = (dx*cosd(angle) - dy*sind(angle)) + cx
+            self.te_center[:,1] = (dx*sind(angle) + dy*cosd(angle)) + cy
 
     def center_le(self):
         """centers the blade by placing leading edge at 0,0
@@ -1051,6 +1173,7 @@ class Airfoil3D:
         self.control_ps -= np.array([xc, yc, zc])
         self.control_ss -= np.array([xc, yc, zc])
         
+        self.stack_bezier_ctrl_pts -= np.array([xc, yc, zc])
         self.stack_bezier.x = self.stack_bezier.x - xc
         self.stack_bezier.y = self.stack_bezier.y - yc
         self.stack_bezier.z = self.stack_bezier.z - zc
@@ -1358,7 +1481,7 @@ def import_geometry(folder:str,npoints:int=100,nspan:int=2,axial_chord:float=1,s
     a3D.ss = copy.deepcopy(a3D.shft_ss)
     a3D.ps = copy.deepcopy(a3D.shft_ps)
     a3D.bImportedBlade = True
-    a3D.stackType=StackType.centroid # Centroid
+    a3D.stackType=StackType.Centroid # Centroid
     a3D.span = max(z)-min(z)
     a3D.spanwise_spline_fit()
     a3D.nspan = nspan

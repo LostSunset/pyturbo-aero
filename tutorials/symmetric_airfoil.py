@@ -50,7 +50,7 @@ stator_tip.add_ss_flow_guidance_2(0.8,10) # Useful for highspeed flows
 # stator_tip.plot2D()
 
 stator3D = Airfoil3D([stator_hub,stator_tip],[0,1],rtip-rhub)
-stator3D.stack(StackType.leading_edge) 
+stator3D.stack(StackType.Leading_Edge) 
 # stator3D.add_sweep(sweep_y=[0,-0.05,0.01], sweep_z=[0.0, 0.5, 1]) # Z =1 is blade tip, Z = 0 is blade hub. The units are in percentage
 # stator3D.add_lean(leanX=[0,0.1,0.05], leanZ=[0,0.5,1])
 stator3D.build(nProfiles=20,num_points=160,trailing_edge_points=20)
@@ -106,7 +106,7 @@ rotor_tip.match_thickness(location='TE')
 
 #%% Rotor 3D
 rotor3D = Airfoil3D(profileArray=[rotor_hub,rotor_mid,rotor_tip],profile_loc=[0.0,0.5,1.0], height = rtip-rhub)
-rotor3D.stack(StackType.centroid) 
+rotor3D.stack(StackType.Centroid) 
 rotor3D.build(nProfiles=20,num_points=120,trailing_edge_points=20)
 # rotor3D.plot3D()
 
